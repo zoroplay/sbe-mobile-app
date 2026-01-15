@@ -5,31 +5,38 @@ import {
   createApi,
   fetchBaseQuery,
 } from "@reduxjs/toolkit/query/react";
-import environmentConfig from "../configs/environment.config";
 import { Mutex } from "async-mutex";
+import CryptoJS from "crypto-js";
+import * as ExpoCrypto from "expo-crypto";
 import { logout } from "../../../hooks/useServerLogout";
 import { getToken } from "../actions/getAccessToken";
-import { Buffer } from "buffer";
-import * as Crypto from "expo-crypto";
-// import CryptoJS from "crypto-js";
-import CryptoJS from "react-native-crypto-js";
+import environmentConfig from "../configs/environment.config";
+// import CryptoJS from "react-native-crypto-js";
 
 
+async function randomIVWordArray(bytes = 16) {
+  const randomBytes = await ExpoCrypto.getRandomBytesAsync(bytes);
+
+  // Convert Uint8Array -> CryptoJS WordArray
+  const wordArray = CryptoJS.lib.WordArray.create(randomBytes as any);
+
+  return wordArray;
+}
 
 const generateApiKey = (): string => {
-  const key = CryptoJS.enc.Hex.stringify(
-    CryptoJS.SHA256(
-      `${environmentConfig.CLIENT_ID}:${environmentConfig.SITE_KEY || ""}`
-    )
-  );
-  return key;
+  const key = CryptoJS.SHA256(`${environmentConfig.CLIENT_ID}:${environmentConfig.SITE_KEY}`).toString(CryptoJS.enc.Hex);
+  console.log("Generated API Key:", key);
+  return key; // 64 hex chars (32 bytes)
 };
 
-const aesEncrypt = (): string => {
+const aesEncrypt = async (): Promise<string> => {
   try {
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const iv = CryptoJS.lib.WordArray.random(16);
 
+    // 16-byte IV
+    const iv = await randomIVWordArray(16);
+
+    // Key (32 bytes) from SHA256 hex
     const hexKey = generateApiKey();
     const key = CryptoJS.enc.Hex.parse(hexKey);
 
@@ -40,9 +47,10 @@ const aesEncrypt = (): string => {
     });
 
     const ivHex = iv.toString(CryptoJS.enc.Hex);
-    const ciphertextHex = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+    const cipherHex = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
 
-    const signature = ivHex + ciphertextHex;
+    const signature = ivHex + cipherHex;
+    console.log("Generated API Signature:", signature);
     return signature;
   } catch (error) {
     console.error("Encryption failed:", error);
