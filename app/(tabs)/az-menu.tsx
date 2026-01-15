@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   FlatList,
   ScrollView,
@@ -39,30 +39,47 @@ export default function LandingPage() {
     sport_id: string;
     sport_name: string;
   } | null>({ sport_id, sport_name });
+  const flatListRef = useRef<FlatList>(null);
+
   useEffect(() => {
     if (isSuccess) {
       console.log("Fixtures queried successfully");
       router.push(`/search`);
     }
   }, [isSuccess]);
+  
   useEffect(() => {
     dispatch(setSearchQuery(""));
   }, []);
 
-  // Set first sport as selected by default when sportsData is loaded
+  // Set first sport as selected by default when sportsData is loaded and scroll to it
   useEffect(() => {
-    if (!sport_id && sportsData && sportsData.length > 0) {
+    if (sportsData && sportsData.length > 0) {
+      const defaultSportId = sport_id || sportsData[0].sportID;
+      const defaultSportName = sport_name || sportsData[0].sportName;
+      
       setSelectedSport({
-        sport_id: sport_id || sportsData[0].sportID,
-        sport_name: sport_name || sportsData[0].sportName,
+        sport_id: defaultSportId,
+        sport_name: defaultSportName,
       });
-    } else {
-      setSelectedSport({
-        sport_id: sport_id,
-        sport_name: sport_name,
-      });
+
+      // Find the index of the selected sport and scroll to it
+      const selectedIndex = sportsData.findIndex(
+        (sport) => sport.sportID === defaultSportId
+      );
+      
+      if (selectedIndex !== -1 && flatListRef.current) {
+        // Delay scroll to ensure FlatList is fully rendered
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index: selectedIndex,
+            animated: true,
+            viewPosition: 0.5, // Center the item
+          });
+        }, 100);
+      }
     }
-  }, [sportsData, sport_id, sport_name]);
+  }, [sportsData,sport_id, sport_name]);
   const sportsNav = (sportsData || []).map((sport) => ({
     sport_id: sport.sportID,
     name: sport.sportName,
@@ -98,6 +115,7 @@ export default function LandingPage() {
 
       <View style={styles.top_bar}>
         <FlatList
+          ref={flatListRef}
           data={sportsNav}
           horizontal
           renderItem={({ item }) => {
@@ -137,6 +155,17 @@ export default function LandingPage() {
             );
           }}
           keyExtractor={(item, idz) => String(idz)}
+          onScrollToIndexFailed={(info) => {
+            // Handle scroll failure gracefully
+            const wait = new Promise((resolve) => setTimeout(resolve, 500));
+            wait.then(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.5,
+              });
+            });
+          }}
           showsHorizontalScrollIndicator={false}
         />
       </View>

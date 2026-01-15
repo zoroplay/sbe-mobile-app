@@ -127,11 +127,12 @@ const Footer = () => {
               });
               return;
             }
+            dispatch(logoutUser());
             // Scroll to top logic (if available)
           }}
         >
           <Text style={styles.backToTopText}>
-            {!is_authenticated ? "Login" : "Back to Top"}
+            {!is_authenticated ? "Login" : "Logout"}
           </Text>
         </TouchableOpacity>
       </View>

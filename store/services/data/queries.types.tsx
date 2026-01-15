@@ -3,9 +3,7 @@ import { BetSlip } from "./betting.types";
 export interface GetTransactionsDto {
   clientId: string;
   endDate: string;
-  page_size: number;
   startDate: string;
-  type: string;
   page: number;
 }
 export interface GetBetListDto {

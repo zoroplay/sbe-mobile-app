@@ -5,6 +5,7 @@ import type { LiveFixture } from "../slice/live-games.slice";
 import type { Outcome } from "../../../data/types/betting.types";
 import { BetSlip, FindBetData } from "@/store/services/data/betting.types";
 import { BET_TYPES_ENUM } from "@/data/enums/enum";
+import { BetHistoryBet } from "@/store/services/data/queries.types";
 
 export interface BettingGame {
   id: string;
@@ -97,6 +98,8 @@ export interface BettingState {
   display_duration: number; // How long to show change indicators (in ms)
   betslip: BetSlip | null;
   bet_type: BET_TYPES_ENUM;
+
+  bet_data: BetHistoryBet | null;
 }
 
 export interface CouponData {

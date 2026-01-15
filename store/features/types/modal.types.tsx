@@ -33,4 +33,5 @@ export enum MODAL_COMPONENTS {
   GAME_OPTIONS_MODAL = "game-options-modal",
   SUCCESS_MODAL = "success-modal",
   CHANGE_PASSWORD_MODAL = "change-password-modal",
+  LEAVE_CASINO_MODAL = "leave-casino-modal",
 }

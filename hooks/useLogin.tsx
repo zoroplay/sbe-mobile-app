@@ -1,9 +1,6 @@
 import { OVERVIEW } from "@/data/routes/routes";
 import { useLoginMutation } from "@/store/services/auth.service";
-import environmentConfig, {
-  getEnvironmentVariable,
-  ENVIRONMENT_VARIABLES,
-} from "@/store/services/configs/environment.config";
+import environmentConfig from "@/store/services/configs/environment.config";
 import { showToast, TOAST_TYPE_ENUM } from "@/utils/toast";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -81,14 +78,16 @@ export const useLogin = () => {
       }
     }
     if (isError) {
+      const errorMessage =
+        (error && "data" in error
+          ? (error.data as any)?.message || (error.data as any)?.error
+          : undefined) ||
+        (error && "message" in error ? error.message : undefined) ||
+        "Invalid username or password";
       showToast({
         type: TOAST_TYPE_ENUM.ERROR,
         title: "Login Failed",
-        description:
-          error?.data?.message ||
-          error?.data?.error ||
-          error?.message ||
-          "Invalid username or password",
+        description: errorMessage,
       });
     }
   }, [isSuccess, isError, isLoading]);

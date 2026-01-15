@@ -1,4 +1,4 @@
-import { useAppSelector } from "@/hooks/useAppDispatch";
+import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { useLazyFetchBetHistoryQuery } from "@/store/services/bets.service";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OVERVIEW } from "@/data/routes/routes";
@@ -16,203 +17,205 @@ import { useModal } from "@/hooks/useModal";
 import { MODAL_COMPONENTS } from "@/store/features/types";
 import environmentConfig from "@/store/services/configs/environment.config";
 import { BetHistoryBet } from "@/store/services/data/queries.types";
+import { setBetData } from "@/store/features/slice/betting.slice";
 
 export default function OpenBetsPage() {
   const [fetchBetHistory, { data, isFetching: isLoading }] =
     useLazyFetchBetHistoryQuery();
 
   const { user } = useAppSelector((state) => state.user);
+  const [expandedBetId, setExpandedBetId] = useState<number | null>(null);
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
   const renderOpenBetCard = (bet: BetHistoryBet) => {
     const selection = bet.selections[0];
+    const isExpanded = expandedBetId === bet.id;
+    const isLive = bet.statusCode === 0; // Assuming 0 means live/pending
+
     return (
-      <View
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setExpandedBetId(isExpanded ? null : bet.id)}
         style={{
-          backgroundColor: "#fff",
-          borderRadius: 6,
-          borderWidth: 1,
-          borderColor: "#eee",
-          marginBottom: 16,
-          padding: 16,
-          shadowColor: "#000",
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
-          elevation: 2,
-          minWidth: 260,
-          maxWidth: 340,
-          alignSelf: "center",
+          backgroundColor: "#1a2332",
+          borderRadius: 8,
+          marginBottom: 12,
+          overflow: "hidden",
+          width: "100%",
+          // maxWidth: 400,
         }}
       >
+        {/* Header */}
         <View
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 8,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: "#2a3547",
           }}
         >
-          <Text style={{ fontWeight: "bold", color: "#222" }}>
-            {bet.betCategoryDesc || bet.betCategory || "Single"}
-          </Text>
-          <View
-            style={{
-              flex: 1,
-              height: 1,
-              backgroundColor: "#eee",
-              marginLeft: 8,
-            }}
-          />
-        </View>
-        <Text style={{ color: "#222", marginBottom: 8 }}>
-          {selection.eventName}
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          <Text style={{ color: "#444" }}>Stake</Text>
-          <Text style={{ color: "#444" }}>Pot. Win</Text>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ fontWeight: "bold", color: "#222" }}>{bet.stake}</Text>
-          <Text style={{ fontWeight: "bold", color: "#222" }}>
-            {bet.possibleWin}
-          </Text>
-        </View>
-        {bet.cashOutAmount > 0 && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#228B22",
-              borderRadius: 4,
-              paddingVertical: 10,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>
-              Cashout NGN {Number(bet.cashOutAmount).toFixed(2)}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={{ fontWeight: "bold", color: "#fff", fontSize: 16 }}>
+              {bet.betCategoryDesc || bet.betCategory || "Single"}
             </Text>
-          </TouchableOpacity>
+            {isLive && (
+              <View
+                style={{
+                  backgroundColor: "#ef4444",
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 11, fontWeight: "bold" }}>
+                  Live
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ color: "#9ca3af", fontSize: 20 }}>
+            {isExpanded ? "−" : "+"}
+          </Text>
+        </View>
+
+        {/* Collapsed View - Event Name */}
+        {!isExpanded && (
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ color: "#e5e7eb", fontSize: 15 }} numberOfLines={1}>
+              {selection.eventName}
+            </Text>
+          </View>
         )}
-      </View>
+
+        {/* Expanded View - Full Details */}
+        {isExpanded && (
+          <>
+            {/* All Selections */}
+            <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
+              {bet.selections.map((sel, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: idx < bet.selections.length - 1 ? 1 : 0,
+                    borderBottomColor: "#2a3547",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={18}
+                      color="#9ca3af"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={{ color: "#e5e7eb", fontSize: 15, flex: 1 }}>
+                      {sel.outcomeName}{" "}
+                      <Text style={{ color: "#10b981", fontWeight: "bold" }}>
+                        @ {Number(sel.odds??0).toFixed(2) || "N/A"}
+                      </Text>{" "}
+                      <Text style={{ color: "#9ca3af" }}>
+                        {sel.marketName || ""}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* Event Name - Underlined */}
+                  <Text
+                    style={{
+                      color: "#d1d5db",
+                      fontSize: 14,
+                      textDecorationLine: "underline",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {sel.eventName}
+                  </Text>
+
+                  {/* Date/Time */}
+                  <Text style={{ color: "#9ca3af", fontSize: 13 }}>
+                    { sel.eventDate || ""}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Stake and Pot. Win */}
+        <View
+          style={{
+            flexDirection: "row",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderTopWidth: 1,
+            borderTopColor: "#2a3547",
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: "#9ca3af", fontSize: 13, marginBottom: 4 }}>
+              Stake
+            </Text>
+            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
+              {bet.stake}
+            </Text>
+          </View>
+          <View style={{ flex: 1, alignItems: "flex-end" }}>
+            <Text style={{ color: "#9ca3af", fontSize: 13, marginBottom: 4 }}>
+              Pot. Win
+            </Text>
+            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
+              {bet.possibleWin}
+            </Text>
+          </View>
+        </View>
+
+        {/* Cashout Button */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          {bet.cashOutAmount > 0 ? (
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#10b981",
+                borderRadius: 6,
+                paddingVertical: 12,
+                alignItems: "center",
+              }}
+              onPress={(e) => {
+                e.stopPropagation();
+                // Handle cashout
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 15 }}>
+                Cashout {bet.cashOutAmount.toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View
+              style={{
+                backgroundColor: "#374151",
+                borderRadius: 6,
+                paddingVertical: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#9ca3af", fontWeight: "600", fontSize: 15 }}>
+                Cashout Unavailable
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
-  // Helper: Render bet history card
-  // const renderBetHistoryCard = (bet: BetHistoryBet) => {
-  //   const selection = bet.selections[0];
-  //   // Status: 1 = Won, 2 = Lost, 0 = Pending
-  //   let statusLabel = "Pending";
-  //   let statusColor = "#b0b8c1";
-  //   let statusBg = "#eee";
-  //   if (bet.statusCode === 1) {
-  //     statusLabel = "Won";
-  //     statusColor = "#fff";
-  //     statusBg = "#10B981";
-  //   } else if (bet.statusCode === 2) {
-  //     statusLabel = "Lost";
-  //     statusColor = "#fff";
-  //     statusBg = "#888";
-  //   }
-  //   return (
-  //     <View
-  //       style={{
-  //         backgroundColor: "#fff",
-  //         borderRadius: 6,
-  //         borderWidth: 1,
-  //         borderColor: "#eee",
-  //         marginBottom: 16,
-  //         padding: 0,
-  //         shadowColor: "#000",
-  //         shadowOpacity: 0.05,
-  //         shadowRadius: 4,
-  //         elevation: 2,
-  //         minWidth: 260,
-  //         maxWidth: 340,
-  //         alignSelf: "center",
-  //       }}
-  //     >
-  //       <View
-  //         style={{
-  //           flexDirection: "row",
-  //           alignItems: "center",
-  //           borderTopLeftRadius: 6,
-  //           borderTopRightRadius: 6,
-  //           overflow: "hidden",
-  //         }}
-  //       >
-  //         <View
-  //           style={{
-  //             backgroundColor: statusBg,
-  //             flex: 1,
-  //             padding: 10,
-  //             borderTopLeftRadius: 6,
-  //             flexDirection: "row",
-  //             alignItems: "center",
-  //           }}
-  //         >
-  //           <Text
-  //             style={{ fontWeight: "bold", color: statusColor, fontSize: 15 }}
-  //           >
-  //             {bet.betCategoryDesc || bet.betCategory || "Single"}
-  //           </Text>
-  //         </View>
-  //         <View
-  //           style={{
-  //             backgroundColor: statusBg,
-  //             paddingHorizontal: 12,
-  //             paddingVertical: 10,
-  //             borderTopRightRadius: 6,
-  //           }}
-  //         >
-  //           <Text
-  //             style={{ color: statusColor, fontWeight: "bold", fontSize: 15 }}
-  //           >
-  //             {statusLabel}
-  //           </Text>
-  //         </View>
-  //       </View>
-  //       <View
-  //         style={{
-  //           flexDirection: "row",
-  //           justifyContent: "space-between",
-  //           paddingHorizontal: 10,
-  //           paddingTop: 8,
-  //         }}
-  //       >
-  //         <Text style={{ color: "#888", fontSize: 12 }}>Total Stake(NGN)</Text>
-  //         <Text style={{ color: "#888", fontSize: 12 }}>Total Return</Text>
-  //       </View>
-  //       <View
-  //         style={{
-  //           flexDirection: "row",
-  //           justifyContent: "space-between",
-  //           paddingHorizontal: 10,
-  //           paddingBottom: 4,
-  //         }}
-  //       >
-  //         <Text style={{ fontWeight: "bold", color: "#222", fontSize: 15 }}>
-  //           {bet.stake?.toFixed(2)}
-  //         </Text>
-  //         <Text style={{ fontWeight: "bold", color: "#222", fontSize: 15 }}>
-  //           {bet.possibleWin?.toFixed(2)}
-  //         </Text>
-  //       </View>
-  //       <Text
-  //         style={{ color: "#222", paddingHorizontal: 10, paddingBottom: 10 }}
-  //       >
-  //         {selection.eventName}
-  //       </Text>
-  //     </View>
-  //   );
-  // };
-
   const renderBetHistoryCard = (bet: BetHistoryBet, onPress?: () => void) => {
     const selection = bet.selections[0];
 
@@ -251,7 +254,11 @@ export default function OpenBetsPage() {
         {/* Card Content */}
         <View style={styles.card}>
           {/* Header with Bet Type and Status */}
-          <View style={[styles.header, { backgroundColor: statusBg }]}>
+          <Pressable onPress={() => {
+            dispatch(setBetData(bet));
+            router.push(`/ticket-details`);
+
+          }} style={[styles.header, { backgroundColor: statusBg }]}>
             <Text style={[styles.headerText, { color: statusColor }]}>
               {bet.betCategoryDesc || bet.betCategory || "Single"}
             </Text>
@@ -261,7 +268,7 @@ export default function OpenBetsPage() {
               </Text>
               <Text style={[styles.chevron, { color: statusColor }]}>›</Text>
             </View>
-          </View>
+          </Pressable>
 
           {/* Stake and Return Labels */}
           <View style={styles.labelsRow}>
@@ -294,7 +301,6 @@ export default function OpenBetsPage() {
 
     return CardContent;
   };
-  const router = useRouter();
   const { is_authenticated } = useAppSelector((state) => state.user);
   const tabList = [
     { id: 0, name: "Open Bets", key: "open" },
@@ -370,6 +376,7 @@ export default function OpenBetsPage() {
                 justifyContent: "center",
                 alignItems: "center",
                 padding: 8,
+                width: "100%",
               }}
             >
               {isLoading ? (
@@ -378,7 +385,7 @@ export default function OpenBetsPage() {
                 </Text>
               ) : Array.isArray(data?.bets) && data?.bets.length > 0 ? (
                 data.bets.map((bet) => (
-                  <View key={bet.id}>{renderOpenBetCard(bet)}</View>
+                  <View key={bet.id} style={{ width: "100%" }}>{renderOpenBetCard(bet)}</View>
                 ))
               ) : (
                 <Text style={{ color: "#6b7280", fontSize: 16 }}>

@@ -19,14 +19,24 @@ export type ImageKey = LocalImageKey;
 
 type ExtractRouteParams<T extends string> =
   T extends `${string}:${infer Param}/${infer Rest}`
-    ? Param | ExtractRouteParams<`/${Rest}`>
+    ? ExtractParamName<Param> | ExtractRouteParams<`/${Rest}`>
     : T extends `${string}:${infer Param}&${infer Rest}`
-      ? Param | ExtractRouteParams<`&${Rest}`>
+      ? ExtractParamName<Param> | ExtractRouteParams<`&${Rest}`>
       : T extends `${string}:${infer Param}?${infer Rest}`
-        ? Param | ExtractRouteParams<`?${Rest}`>
-        : T extends `${string}:${infer Param}`
-          ? Param
-          : never;
+        ? ExtractParamName<Param> | ExtractRouteParams<`?${Rest}`>
+      : T extends `${string}:${infer Param}`
+        ? ExtractParamName<Param>
+        : never;
+
+// Helper type to extract just the parameter name, stopping at special chars
+type ExtractParamName<T extends string> = 
+  T extends `${infer Name}?${string}` 
+    ? Name
+    : T extends `${infer Name}&${string}`
+      ? Name
+      : T extends `${infer Name}/${string}`
+        ? Name
+        : T;
 
 type RouteParams<T extends string> = {
   [K in ExtractRouteParams<T>]: string | number | (string | number)[];

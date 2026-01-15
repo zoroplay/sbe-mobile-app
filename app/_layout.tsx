@@ -59,7 +59,7 @@ export default function RootLayout() {
     const timeout = setTimeout(() => {
       if (!persistLoaded) {
         console.warn(
-          "PersistGate did not finish after 10 seconds. Forcing persistLoaded to true."
+          "PersistGate did not finish after 10 seconds. Forcing persistLoaded to true.",
         );
         setPersistLoaded(true);
       }
@@ -71,7 +71,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontError) {
       setError(
-        fontError instanceof Error ? fontError.message : String(fontError)
+        fontError instanceof Error ? fontError.message : String(fontError),
       );
     }
   }, [fontError]);
@@ -158,30 +158,30 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const dispatch = useAppDispatch();
-  
+
   // Safe selector usage: fallback to empty/defaults if state is not ready
   const fixturesState = useAppSelector((state) => state?.fixtures ?? {});
   const search = fixturesState?.search ?? {};
   const search_query = search?.search_query ?? "";
-  
+
   const [queryFixtures, { isLoading }] = useQueryFixturesMutation();
   useGetGlobalVariablesQuery();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
 
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <Stack>
-            <Stack.Screen name="(tabs)" options={{  title: "Home", headerShown: false }} />
-            <Stack.Screen name="(casino)" options={{ headerShown: false }} />
             <Stack.Screen
-              name="modal"
-              options={{ title: "Sports" }}
+              name="(tabs)"
+              options={{ title: "Home", headerShown: false }}
             />
+            <Stack.Screen name="(casino)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ title: "Sports" }} />
             <Stack.Screen
               name="profile-details"
               options={{
@@ -213,17 +213,17 @@ function RootLayoutNav() {
               }}
             />
             <Stack.Screen
-              name="(provider)"
-              options={{ headerShown: false, presentation: "modal" }}
+              name="ticket-details"
+              options={{
+                title: "Ticket Details",
+                // headerShown: false,
+              }}
             />
-            <Stack.Screen
-              name="(category)"
-              options={{ headerShown: false, presentation: "modal" }}
-            />
+            <Stack.Screen name="(provider)" options={{ headerShown: false }} />
+            <Stack.Screen name="(category)" options={{ headerShown: false }} />
             <Stack.Screen
               name="search"
               options={{
-                presentation: "modal",
                 headerTitle: () => (
                   <SingleSearchInput
                     value={search_query}
@@ -245,9 +245,9 @@ function RootLayoutNav() {
           </Stack>
 
           <ModalProvider />
-          <Toast />
         </ThemeProvider>
       </SafeAreaProvider>
+      <Toast />
     </GestureHandlerRootView>
   );
 }

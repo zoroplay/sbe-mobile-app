@@ -60,7 +60,6 @@ export default function ModalScreen() {
           fixtures={fixtures}
           isLoading={isFetching}
         />
-        <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
       </View>
     </ScrollView>
   );

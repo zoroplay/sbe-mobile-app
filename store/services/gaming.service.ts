@@ -49,7 +49,7 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         method: REQUEST_ACTIONS.GET,
       }),
     }),
-    gameStart: builder.query<ApiResponse<{ url: string }>, StartGameRequest>({
+    gameStart: builder.query<{ url: string }, StartGameRequest>({
       query: (body) => ({
         url: AppHelper.buildQueryUrl(GAMING_ACTIONS.CASINO_START_GAME, {}),
         method: REQUEST_ACTIONS.POST,

@@ -8,11 +8,12 @@ import BetslipModal from "./components/BetslipModal";
 import GameOptions from "./components/GameOptions";
 import SuccessModal from "./components/Success";
 import ChangePasswordModal from "./components/ChangePassword";
+import LeaveCasino from "./components/LeaveCasino";
 
 const ModalProvider: React.FC = () => {
   const dispatch = useAppDispatch();
   const { is_open, component_name, dismissible } = useAppSelector(
-    (state) => state.modal
+    (state) => state.modal,
   );
   const [shouldRender, setShouldRender] = useState(false);
 
@@ -27,7 +28,6 @@ const ModalProvider: React.FC = () => {
     }
   }, [is_open]);
 
-  // Only render if there's an active modal and it's visible
   if (!shouldRender || !component_name) {
     return null;
   }
@@ -52,6 +52,8 @@ const ModalProvider: React.FC = () => {
         return <SuccessModal onClose={handleClose} />;
       case MODAL_COMPONENTS.CHANGE_PASSWORD_MODAL:
         return <ChangePasswordModal onClose={handleClose} />;
+      case MODAL_COMPONENTS.LEAVE_CASINO_MODAL:
+        return <LeaveCasino onClose={handleClose} />;
       default:
         return null;
     }

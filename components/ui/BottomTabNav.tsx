@@ -4,6 +4,7 @@ import { View, TouchableOpacity } from "react-native";
 import CountriesList from "./nav-section/CountriesList";
 import { Text } from "../Themed";
 import FixturesBlock from "../fixtures/FixturesBlock";
+import { useFixturesHighlightsQuery } from "@/store/services/bets.service";
 
 const tabs = [
   { id: 0, name: "Highlights" },
@@ -24,6 +25,17 @@ export default function BottomTabNav({
     markets = [],
   } = useAppSelector((state) => state.fixtures);
   const [selectedTab, setSelectedTab] = useState(0);
+
+  // Fetch today's fixtures when Today tab is selected
+  const { isFetching: isTodayLoading } = useFixturesHighlightsQuery(
+    {
+      sport_id: String(sport_id),
+      today: selectedTab === 1 ? "1" : undefined,
+    },
+    {
+      skip: selectedTab !== 1, // Only fetch when Today tab is selected
+    },
+  );
 
   return (
     <View style={{ flex: 1, width: "100%", backgroundColor: "rgb(6,0,25)" }}>
@@ -87,7 +99,13 @@ export default function BottomTabNav({
           fixtures={fixtures}
           isLoading={isLoading}
         />
-      ) : selectedTab == 2 ? (
+      ) : selectedTab === 1 ? (
+        <FixturesBlock
+          markets={markets}
+          fixtures={fixtures}
+          isLoading={isLoading || isTodayLoading}
+        />
+      ) : selectedTab === 2 ? (
         <CountriesList sport_id={sport_id} />
       ) : (
         <></>

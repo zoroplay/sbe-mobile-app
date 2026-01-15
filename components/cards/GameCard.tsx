@@ -14,6 +14,8 @@ import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { setCasinoGame } from "@/store/features/slice/fixtures.slice";
 import { router } from "expo-router";
+import { useModal } from "@/hooks/useModal";
+import { MODAL_COMPONENTS } from "@/store/features/types";
 
 interface GameCardProps {
   isLoading?: boolean;
@@ -38,6 +40,7 @@ export const EmptyState = ({
 const GameCard = ({ isLoading, game }: GameCardProps) => {
   const pulseAnim = useState(() => new Animated.Value(0.6))[0];
   const dispatch = useAppDispatch();
+  const { openModal } = useModal();
 
   const { user } = useAppSelector((state) => state.user);
   useEffect(() => {
@@ -55,7 +58,7 @@ const GameCard = ({ isLoading, game }: GameCardProps) => {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     loop.start();
     return () => loop.stop();
@@ -77,13 +80,17 @@ const GameCard = ({ isLoading, game }: GameCardProps) => {
   }
 
   const handlePress = () => {
-    if (!game || !user || !user.id) return;
-
+    if (!game || !user || !user.id) {
+      openModal({
+        modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+      });
+      return;
+    }
     dispatch(
       setCasinoGame({
         game_name: game.title,
         game_id: String(game.id),
-      })
+      }),
     );
     router.push(`/game-play`);
   };

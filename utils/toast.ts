@@ -21,7 +21,7 @@ export const showToast = (toastData: ToastData) => {
     topOffset: 50,
     props: {
       style: {
-        zIndex: 1000000,
+        zIndex: 10000000000000,
       },
     },
   });

@@ -19,6 +19,7 @@ import type {
 } from "../../services/data/betting.types";
 import { BET_TYPES_ENUM } from "@/data/enums/enum";
 import { AppHelper } from "@/utils/helper";
+import { BetHistoryBet } from "@/store/services/data/queries.types";
 
 const calculateTotalOdds = (bets: any[]): number => {
   if (bets.length === 0) return 1;
@@ -1253,6 +1254,16 @@ const BettingSlice = createSlice({
             ? "Combined"
             : "Split";
     },
+
+    setBetData: (
+      state: BettingState,
+      {payload}: PayloadAction<
+         BetHistoryBet
+      >
+    ) => {
+   
+      state.bet_data = payload;
+    }
   },
 });
 
@@ -1279,6 +1290,7 @@ export const {
   setOddsDisplayDuration,
   suspendAllMarketsForMatch,
   updateBetType,
+  setBetData
 } = BettingSlice.actions;
 
 // Helper function to check if a specific bet is selected

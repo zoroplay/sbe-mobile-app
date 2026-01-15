@@ -18,7 +18,7 @@ export enum BETTING_ACTIONS {
   SPORTS_MENU = "/sports/menu?period=:period&start=:start_date&end=:end_date&timeoffset=:timeoffset",
   SPORT_CATEGORIES = "/sports/categories/:sport_id?period=:period&timeoffset=:timeoffset",
   TOURNAMENTS = "/sports/tournaments/:category_id?period=:period&timeoffset=:timeoffset",
-  SPORTS_HIGHLIGHT = "/sports/highlight/prematch/:sport_id?upcoming=1&page=1&perPage=15&timeoffset=:timeoffset",
+  SPORTS_HIGHLIGHT = "/sports/highlight/prematch/:sport_id?upcoming=1&page=1&perPage=15&timeoffset=:timeoffset&today=:today",
   GET_FIXTURES = "/sports/get-fixtures/:tournament_id?sportID=:sport_id&source=mobile&period=:period&marketID=:market_id&specifier=:specifier&total=:total&timeoffset=:timeoffset",
   FETCH_FIXTURES = "/sports/retail/fixtures/:tournament_id?sid=:sport_id&source=web&period=:period&markets=:markets&specifier=:specifier&total=:total&timeoffset=:timeoffset",
   QUERY_FIXTURES = "/sports/highlight/prematch/:sport_id?upcoming=:upcoming&markets=:markets&search=:search&timeoffset=:timeoffset",
@@ -30,7 +30,7 @@ export enum BETTING_ACTIONS {
   PLACE_BET = "/bets/place-bet/:client_id?channel=shop",
   BOOK_BET = "/bets/book-bet/:client_id?channel=shop",
 
-  GET_TRANSACTIONS = "/user/wallet/transactions?page=:page&limit=:limit",
+  GET_TRANSACTIONS = "/user/wallet/transactions",
   GET_BET_LIST = "/retail/:client_id/betlist?page=:page&limit=:limit",
   GET_BET_HISTORY = "/bets/history?page=:page",
   // Live betting endpoints

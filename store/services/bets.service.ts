@@ -42,7 +42,6 @@ import {
 import { TopBetsResponse } from "./types/responses";
 import { setBetslip } from "../features/slice/betting.slice";
 import { AppHelper } from "@/utils/helper";
-import { states } from "../../../sbamp/generated/prisma/index";
 
 const BetsApiSlice = apiSlice.injectEndpoints({
   overrideExisting: true,
@@ -135,10 +134,11 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         method: REQUEST_ACTIONS.GET,
       }),
     }),
-    fixturesHighlights: builder.query<FixturesResponse, { sport_id: string }>({
+    fixturesHighlights: builder.query<FixturesResponse, { sport_id: string , today?: string}>({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORTS_HIGHLIGHT, {
           sport_id: data.sport_id || "1",
+          today: data.today!,
         }),
         method: REQUEST_ACTIONS.GET,
       }),
@@ -271,7 +271,9 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       GetTransactionsDto
     >({
       query: (data) => ({
-        url: `${BETTING_ACTIONS.GET_TRANSACTIONS}`,
+        url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_TRANSACTIONS, {
+          
+        }),
         method: REQUEST_ACTIONS.POST,
         body: data,
       }),
@@ -440,54 +442,9 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         return Array.isArray(response.data) ? response.data : [];
       },
     }),
-    // Live betting endpoints
-    // getLiveEvents: builder.query<any, { sport_id?: string; status?: string }>({
-    //   query: (data) => ({
-    //     url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_LIVE_EVENTS, {
-    //       sport_id: data.sport_id || "",
-    //       status: data.status || "live",
-    //     }),
-    //     method: REQUEST_ACTIONS.GET,
-    //   }),
-    // }),
 
-    // getLiveEventDetails: builder.query<any, { event_id: string }>({
-    //   query: (data) => ({
-    //     url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_LIVE_EVENT_DETAILS, {
-    //       event_id: data.event_id,
-    //     }),
-    //     method: REQUEST_ACTIONS.GET,
-    //   }),
-    // }),
 
-    // getLiveMarkets: builder.query<
-    //   any,
-    //   { event_id: string; market_ids?: string[] }
-    // >({
-    //   query: (data) => ({
-    //     url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_LIVE_MARKETS, {
-    //       event_id: data.event_id,
-    //       market_ids: data.market_ids?.join(",") || "",
-    //     }),
-    //     method: REQUEST_ACTIONS.GET,
-    //   }),
-    // }),
 
-    // subscribeToLiveEvent: builder.mutation<any, { event_id: string }>({
-    //   query: (data) => ({
-    //     url: BETTING_ACTIONS.SUBSCRIBE_LIVE_EVENT,
-    //     method: REQUEST_ACTIONS.POST,
-    //     body: data,
-    //   }),
-    // }),
-
-    // unsubscribeFromLiveEvent: builder.mutation<any, { event_id: string }>({
-    //   query: (data) => ({
-    //     url: BETTING_ACTIONS.UNSUBSCRIBE_LIVE_EVENT,
-    //     method: REQUEST_ACTIONS.POST,
-    //     body: data,
-    //   }),
-    // }),
   }),
 });
 
@@ -502,7 +459,7 @@ export const {
   useFindCouponMutation,
   usePlaceBetMutation,
   useBookBetMutation,
-  useLazyFetchTransactionsQuery,
+  useFetchTransactionsQuery,
   useFetchBetHistoryQuery,
   useLazyFetchBetListQuery,
   useLazyFetchBetHistoryQuery,

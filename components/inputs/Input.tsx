@@ -64,7 +64,7 @@ const Input = forwardRef<TextInput, InputProps>(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
@@ -72,7 +72,7 @@ const Input = forwardRef<TextInput, InputProps>(
     const isDark = colorScheme === "dark";
     const [showError, setShowError] = useState(false);
     const [validationMessage, setValidationMessage] = useState<string | null>(
-      null
+      null,
     );
     const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
       score: 0,
@@ -180,7 +180,7 @@ const Input = forwardRef<TextInput, InputProps>(
       if (typeof num_select_placeholder === "string") {
         return (
           <Text style={[styles.suffixText, suffixStyle]}>
-            {num_select_placeholder}
+            {num_select_placeholder ?? ""}
           </Text>
         );
       }
@@ -367,7 +367,7 @@ const Input = forwardRef<TextInput, InputProps>(
         )}
       </View>
     );
-  }
+  },
 );
 
 export default Input;

@@ -18,7 +18,8 @@ export const getEnvironmentVariable = (variable: ENVIRONMENT_VARIABLES) => {
 
 const getBaseUrl = (): string => {
   // return getEnvironmentVariable(ENVIRONMENT_VARIABLES.API_BASE_URL);
-  return "https://sports.api.sportsbookengine.com/api/v2";
+  return "https://api.prod.sportsbookengine.com/api/v2";
+  // return "https://sports.api.sportsbookengine.com/api/v2";
 };
 
 export const environmentConfig = {

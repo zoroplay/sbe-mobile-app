@@ -24,6 +24,8 @@ import { Game } from "@/store/services/types/responses";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setCasinoGame } from "@/store/features/slice/fixtures.slice";
 import GameCard from "@/components/cards/GameCard";
+import { MODAL_COMPONENTS } from "@/store/features/types/modal.types";
+import { useModal } from "@/hooks/useModal";
 
 const GamePlay = () => {
   const { user } = useAppSelector((state) => state.user);
@@ -31,15 +33,9 @@ const GamePlay = () => {
   const game_id = casino.game_id;
   const game_name = casino.game_name;
   const dispatch = useAppDispatch();
-  const [showRecommendedGames, setShowRecommendedGames] = useState(false);
-  const {
-    data: game_list_data,
-    isFetching: gameListLoading,
-    refetch: refetchGameList,
-  } = useGameProviderListQuery({ provider_id: String("11") });
-  const game_list: Game[] = Array.isArray(game_list_data?.data)
-    ? game_list_data.data
-    : [];
+  const { openModal } = useModal();
+
+
   const { data, isLoading } = useGameStartQuery(
     {
       gameId: Number(game_id),
@@ -54,34 +50,33 @@ const GamePlay = () => {
     },
     {
       skip: !game_id || !user,
-    }
+    },
   );
 
-  const handleExit = useCallback(() => {
-    router.push("/(casino)");
-  }, []);
+ 
 
-  const handleStay = useCallback(() => {
-    setShowRecommendedGames(false);
-  }, []);
+  // const handleSelectGame = useCallback((game: any) => {
+  //   setShowRecommendedGames(false);
 
-  const handleSelectGame = useCallback((game: any) => {
-    setShowRecommendedGames(false);
+  //   dispatch(
+  //     setCasinoGame({
+  //       game_name: game.title,
+  //       game_id: String(game.id),
+  //     }),
+  //   );
+  //   // Navigate to the game play screen, pass game info (adjust route name and params as needed)
+  //   router.push(`/game-play`);
+  // }, []);
 
-    dispatch(
-      setCasinoGame({
-        game_name: game.title,
-        game_id: String(game.id),
-      })
-    );
-    // Navigate to the game play screen, pass game info (adjust route name and params as needed)
-    router.push(`/game-play`);
-  }, []);
-
-  // Header
   const HeaderCasinoPlay = () => (
     <View style={styles.header}>
-      <TouchableOpacity onPress={() => setShowRecommendedGames(true)}>
+      <TouchableOpacity
+        onPress={() =>
+          openModal({
+            modal_name: MODAL_COMPONENTS.LEAVE_CASINO_MODAL,
+          })
+        }
+      >
         <Text style={styles.backBtn}>{"<"} Back</Text>
       </TouchableOpacity>
       <Text style={styles.headerTitle} numberOfLines={1}>
@@ -91,60 +86,61 @@ const GamePlay = () => {
     </View>
   );
 
-  // Recommended Games Modal
-  const RecommendedGamesModal = () => (
-    <Modal
-      visible={showRecommendedGames}
-      transparent
-      animationType="slide"
-      onRequestClose={handleStay}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            You may also like these games...
-          </Text>
-          <FlatList
-            data={game_list}
-            horizontal
-            keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={{ paddingVertical: 10 }}
-            renderItem={({ item }) => <GameCard game={item} />}
-          />
-          <View style={styles.modalBtnRow}>
-            <TouchableOpacity style={styles.exitBtn} onPress={handleExit}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Exit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.stayBtn} onPress={handleStay}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Stay</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
+
+
+  const gameUrl =  data?.url || "";
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
       <View style={styles.container}>
         <HeaderCasinoPlay />
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#e41827" />
+            <Text style={{ color: "#fff", marginTop: 16 }}>
+              Loading game...
+            </Text>
+          </View>
+        ) : !gameUrl ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorTitle}>Game Unavailable</Text>
+            <Text style={styles.errorMessage}>
+              Unable to load the game at this time.{"\n"}
+              Please try again later.
+            </Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => router.push("/(casino)")}
+            >
+              <Text style={styles.retryButtonText}>Back to Casino</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <WebView
-            source={{ uri: data?.data?.url || "" }}
+            source={{ uri: gameUrl }}
             style={styles.webview}
             startInLoadingState
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
             renderLoading={() => (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#e41827" />
+                <Text style={{ color: "#fff", marginTop: 16 }}>
+                  Loading game...
+                </Text>
               </View>
             )}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.error("[WEBVIEW ERROR]", nativeEvent);
+            }}
+            onLoadStart={() => console.log("[WEBVIEW] Load started")}
+            onLoadEnd={() => console.log("[WEBVIEW] Load ended")}
           />
         )}
-        <RecommendedGamesModal />
       </View>
     </SafeAreaView>
   );
@@ -188,11 +184,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#000",
+    paddingHorizontal: 24,
   },
   webview: {
     flex: 1,
     width: "100%",
     backgroundColor: "#000",
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  errorMessage: {
+    color: "#bfc9d1",
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: "#e41827",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   modalOverlay: {
     flex: 1,

@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import DateRangeInput from "@/components/inputs/DateRangeInput";
-import { useLazyFetchTransactionsQuery } from "@/store/services/bets.service";
+import { useFetchTransactionsQuery } from "@/store/services/bets.service";
 import environmentConfig from "@/store/services/configs/environment.config";
 import { AppHelper } from "@/utils/helper";
 
@@ -25,20 +25,28 @@ const Transactions = () => {
   const [dateRange, setDateRange] = useState(getDefaultDateRange());
   const [pageSize, setPageSize] = useState("15");
   const [currentPage, setCurrentPage] = useState(1);
-  const [fetchTransactions, { data, isLoading }] =
-    useLazyFetchTransactionsQuery();
+  console.log("Date Range:", {
+    clientId: String(environmentConfig.CLIENT_ID!),
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
+    page: currentPage,
+  });
+  const { data, isLoading } = useFetchTransactionsQuery({
+    clientId: String(environmentConfig.CLIENT_ID!),
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
+    page: currentPage,
+  });
   const transactions = Array.isArray(data?.data) ? data?.data : [];
 
-  useEffect(() => {
-    fetchTransactions({
-      clientId: String(environmentConfig.CLIENT_ID!),
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      page: currentPage,
-      page_size: parseInt(pageSize),
-      type: "",
-    });
-  }, [dateRange, currentPage, pageSize]);
+  // useEffect(() => {
+  //   fetchTransactions({
+  //     clientId: String(environmentConfig.CLIENT_ID!),
+  //     startDate: dateRange.startDate,
+  //     endDate: dateRange.endDate,
+  //     page: currentPage,
+  //   });
+  // }, [dateRange, currentPage, pageSize]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#151c2b", padding: 12 }}>

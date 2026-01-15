@@ -15,7 +15,7 @@ import { Text } from "./Themed";
 const { width } = Dimensions.get("window");
 const BUTTON_WIDTH = 120;
 const BUTTON_HEIGHT = 48;
-const SLIDE_OFFSET = BUTTON_WIDTH - 48; // How much of the button is visible when hidden
+const SLIDE_OFFSET = BUTTON_WIDTH - 44; // How much of the button is visible when hidden
 
 export default function BetslipButton({
   onPress,

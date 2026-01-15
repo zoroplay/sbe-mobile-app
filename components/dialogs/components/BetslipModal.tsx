@@ -190,6 +190,7 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
     console.log("Open bet settings");
   };
 
+
   return (
     <BottomModal
       visible={true}
@@ -301,7 +302,7 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                       });
                     }}
                     keyboardType="numeric"
-                    num_select_placeholder={global_variables?.currency_code}
+                    num_select_placeholder={global_variables?.currency_code?? ''}
                     type="num_select"
                     wrapperStyle={styles.stakeInputWrapper}
                     inputStyle={styles.stakeInputText}

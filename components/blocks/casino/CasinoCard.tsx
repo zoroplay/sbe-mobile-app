@@ -6,6 +6,8 @@ import { router } from "expo-router";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { setCasinoGame } from "@/store/features/slice/fixtures.slice";
+import { MODAL_COMPONENTS } from "@/store/features/types/modal.types";
+import { useModal } from "@/hooks/useModal";
 
 interface FixtureCardProps {
   game?: Game;
@@ -13,15 +15,22 @@ interface FixtureCardProps {
 
 const CasinoCard: React.FC<FixtureCardProps> = ({ game }) => {
   const dispatch = useAppDispatch();
+  const { openModal } = useModal();
+
   const { user } = useAppSelector((state) => state.user);
   const handlePress = () => {
-    if (!game || !user || !user.id) return;
+    if (!game || !user || !user.id) {
+      openModal({
+        modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+      });
+      return;
+    }
 
     dispatch(
       setCasinoGame({
         game_name: game.title,
         game_id: String(game.id),
-      })
+      }),
     );
     // Navigate to the game play screen, pass game info (adjust route name and params as needed)
     router.push(`/game-play`);

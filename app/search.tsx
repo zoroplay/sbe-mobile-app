@@ -4,8 +4,6 @@ import { Text, View } from "@/components/Themed";
 import FixturesBlock from "@/components/fixtures/FixturesBlock";
 import { useQueryFixturesMutation } from "@/store/services/bets.service";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
-import { setSearchQuery } from "@/store/features/slice/fixtures.slice";
-import SingleSearchInput from "@/components/inputs/SingleSearchInput";
 
 export default function ModalScreen() {
   const {
@@ -17,7 +15,7 @@ export default function ModalScreen() {
 
   return (
     <View>
-      <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
+      {/* <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} /> */}
 
       <ScrollView>
         <View
