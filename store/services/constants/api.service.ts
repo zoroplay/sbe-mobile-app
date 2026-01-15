@@ -25,7 +25,6 @@ async function randomIVWordArray(bytes = 16) {
 
 const generateApiKey = (): string => {
   const key = CryptoJS.SHA256(`${environmentConfig.CLIENT_ID}:${environmentConfig.SITE_KEY}`).toString(CryptoJS.enc.Hex);
-  console.log("Generated API Key:", key);
   return key; // 64 hex chars (32 bytes)
 };
 
@@ -50,7 +49,6 @@ const aesEncrypt = async (): Promise<string> => {
     const cipherHex = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
 
     const signature = ivHex + cipherHex;
-    console.log("Generated API Signature:", signature);
     return signature;
   } catch (error) {
     console.error("Encryption failed:", error);
