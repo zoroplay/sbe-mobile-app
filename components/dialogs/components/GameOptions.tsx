@@ -598,7 +598,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       {isFixtureLoading || !hasOutcomes ? (
         <ScrollView>
           {skeletonSections.map((section, index) => (
-            <Fragment key={`skeleton-${section.type}-${index}`}>
+            <Fragment key={`skeleton-section-${index}`}>
               {section.component}
             </Fragment>
           ))}
@@ -618,11 +618,15 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
         </View>
       ) : (
         <ScrollView>
-          {dynamicMarketSections.map((section, index) => (
-            <Fragment key={`${section.type}-${index}`}>
-              {section.component}
-            </Fragment>
-          ))}
+          {dynamicMarketSections.map((section, index) => {
+            // Extract marketId from the component's key prop
+            const componentKey = section.component?.key || `market-${index}`;
+            return (
+              <Fragment key={`section-${componentKey}`}>
+                {section.component}
+              </Fragment>
+            );
+          })}
         </ScrollView>
       )}
     </BottomModal>

@@ -94,6 +94,12 @@ const BottomModal: React.FC<BottomModalProps> = ({
     });
   }, [dismissible, onClose, opacityAnim, translateY]);
 
+  // Handle backdrop click (outside modal content)
+  const handleBackdropPress = useCallback(() => {
+    if (!dismissible) return;
+    handleClose();
+  }, [dismissible, handleClose]);
+
   // Keyboard event listeners to move modal up
   useEffect(() => {
     const keyboardShow =
@@ -175,8 +181,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
           pointerEvents="none" // allow touches to pass through
         />
         {/* Overlay for outside click, only intercepts touches outside modal */}
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={styles.backdropTouchable} pointerEvents="auto" />
+        <TouchableWithoutFeedback onPress={handleBackdropPress}>
+          <View style={styles.backdropTouchable} pointerEvents={dismissible ? "auto" : "none"} />
         </TouchableWithoutFeedback>
         {/* Modal content above overlay, does not get intercepted */}
         <Animated.View
@@ -192,19 +198,37 @@ const BottomModal: React.FC<BottomModalProps> = ({
           ]}
           pointerEvents="box-none"
         >
-          <TouchableWithoutFeedback onPress={handleClose}>
+          {/* Drag indicator - tap to close */}
+          {dismissible && (
+            <TouchableWithoutFeedback onPress={handleClose}>
+              <View
+                style={[
+                  styles.dragIndicatorContainer,
+                  { backgroundColor: isDark ? "#000" : "#fff" },
+                ]}
+                pointerEvents="auto"
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close modal"
+                accessibilityHint="Tap to close the modal"
+                testID="modal-drag-indicator"
+                hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
+              >
+                <View
+                  style={[
+                    styles.dragIndicator,
+                    { backgroundColor: isDark ? "#374151" : "#d1d5db" },
+                  ]}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          )}
+          {!dismissible && (
             <View
               style={[
                 styles.dragIndicatorContainer,
                 { backgroundColor: isDark ? "#000" : "#fff" },
               ]}
-              pointerEvents="auto"
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Close modal"
-              accessibilityHint="Tap to close the modal"
-              testID="modal-drag-indicator"
-              hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
             >
               <View
                 style={[
@@ -213,7 +237,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                 ]}
               />
             </View>
-          </TouchableWithoutFeedback>
+          )}
           <View style={styles.contentContainer} pointerEvents="box-none">
             {children}
           </View>

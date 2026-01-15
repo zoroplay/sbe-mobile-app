@@ -4,17 +4,11 @@ import FixtureCard from "./FixtureCard";
 import { useAppSelector } from "@/hooks/useAppDispatch";
 import { useFixturesQuery } from "@/store/services/bets.service";
 import { useState } from "react";
-
 import { MaterialIcons } from "@expo/vector-icons";
 import { Fixture } from "@/data/types/betting.types";
 import { Text } from "@/components/Themed";
 import { getFirebaseImage, localImages, remoteImages } from "@/assets/images";
 
-const tournamentLogos: Record<string, any> = {
-  // Example: [tournamentID]: require('../assets/images/la-liga.png'),
-  // Add your tournamentID to logo mapping here
-  // '1': require('../assets/images/la-liga.png'),
-};
 
 const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
   is_loading,
@@ -45,10 +39,7 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
 
   const getImageURL = (name: string) => {
     if (name == "Championship") {
-      // return new URL(
-      //   "../../assets/images/EFL_Championship_Logo.png",
-      //   import.meta.url
-      // );
+
       return localImages.efl_championship_logo;
     } else if (name == "Bundesliga") {
       return localImages.bundesliga_logo;

@@ -91,58 +91,65 @@ export default function RootLayout() {
     hideSplash();
   }, [fontsLoaded, persistLoaded, splashHidden]);
 
-  // Block rendering until fonts and persist are loaded
-  if (!fontsLoaded || !persistLoaded) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ fontSize: 18 }}>Initializing...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 20,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 18,
-            color: "red",
-            textAlign: "center",
-            marginBottom: 20,
-          }}
-        >
-          Error: {error}
-        </Text>
-        <Text style={{ fontSize: 16, color: "black", textAlign: "center" }}>
-          Please restart the app
-        </Text>
-      </View>
-    );
-  }
-
+  // Always render Provider, but conditionally show loading/error screens
   return (
     <Provider store={store}>
       <PersistGate
-        loading={null}
+        loading={
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#fff",
+            }}
+          >
+            <Text style={{ fontSize: 18 }}>Initializing...</Text>
+          </View>
+        }
         persistor={persistor}
         onBeforeLift={() => {
           setPersistLoaded(true);
         }}
       >
-        <RootLayoutNav />
+        {!fontsLoaded ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#fff",
+            }}
+          >
+            <Text style={{ fontSize: 18 }}>Loading fonts...</Text>
+          </View>
+        ) : error ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 20,
+              backgroundColor: "#fff",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                color: "red",
+                textAlign: "center",
+                marginBottom: 20,
+              }}
+            >
+              Error: {error}
+            </Text>
+            <Text style={{ fontSize: 16, color: "black", textAlign: "center" }}>
+              Please restart the app
+            </Text>
+          </View>
+        ) : (
+          <RootLayoutNav />
+        )}
       </PersistGate>
     </Provider>
   );
@@ -150,14 +157,16 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-
+  const dispatch = useAppDispatch();
+  
   // Safe selector usage: fallback to empty/defaults if state is not ready
-  const fixturesState = useAppSelector((state) => state.fixtures ?? {});
-  const search = fixturesState.search ?? {};
-  const search_query = search.search_query ?? "";
+  const fixturesState = useAppSelector((state) => state?.fixtures ?? {});
+  const search = fixturesState?.search ?? {};
+  const search_query = search?.search_query ?? "";
+  
   const [queryFixtures, { isLoading }] = useQueryFixturesMutation();
   useGetGlobalVariablesQuery();
-  const dispatch = useAppDispatch();
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -167,11 +176,11 @@ function RootLayoutNav() {
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{  title: "Home", headerShown: false }} />
             <Stack.Screen name="(casino)" options={{ headerShown: false }} />
             <Stack.Screen
               name="modal"
-              options={{ title: "Sports", presentation: "modal" }}
+              options={{ title: "Sports" }}
             />
             <Stack.Screen
               name="profile-details"

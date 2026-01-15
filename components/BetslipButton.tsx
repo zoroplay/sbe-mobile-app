@@ -1,7 +1,7 @@
 import { useBetting } from "@/hooks/useBetting";
 import { useModal } from "@/hooks/useModal";
 import { MODAL_COMPONENTS } from "@/store/features/types";
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -15,7 +15,7 @@ import { Text } from "./Themed";
 const { width } = Dimensions.get("window");
 const BUTTON_WIDTH = 120;
 const BUTTON_HEIGHT = 48;
-const SLIDE_OFFSET = BUTTON_WIDTH - 32; // How much of the button is visible when hidden
+const SLIDE_OFFSET = BUTTON_WIDTH - 48; // How much of the button is visible when hidden
 
 export default function BetslipButton({
   onPress,
@@ -28,21 +28,21 @@ export default function BetslipButton({
   const [visible, setVisible] = useState(false);
   const translateX = React.useRef(new Animated.Value(SLIDE_OFFSET)).current;
   const { openModal } = useModal();
-  const handleToggle = () => {
+
+  useEffect(() => {
     Animated.timing(translateX, {
-      toValue: visible ? SLIDE_OFFSET : 0,
+      toValue: !visible ? SLIDE_OFFSET : 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => setVisible(!visible));
-  };
+    }).start(() => {});
+  }, [visible]);
 
   return (
     <>
-      {visible && (
-        <TouchableWithoutFeedback onPress={handleToggle}>
+      {/* <TouchableWithoutFeedback onPress={handleToggle}>
           <View style={styles.overlay} />
-        </TouchableWithoutFeedback>
-      )}
+        </TouchableWithoutFeedback> */}
+
       <Animated.View
         style={[
           styles.container,
@@ -55,15 +55,16 @@ export default function BetslipButton({
           style={styles.button}
           activeOpacity={0.8}
           onPress={() => {
-            if (!visible) {
-              handleToggle();
+            if (visible) {
+              // handleToggle();
+              setVisible(false);
             } else {
               // onPress();
-              setTimeout(() => setVisible(false), 300);
-
+              setVisible(true);
               openModal({
                 modal_name: MODAL_COMPONENTS.BETSLIP_MODAL,
               });
+              setTimeout(() => setVisible(false), 300);
             }
           }}
         >

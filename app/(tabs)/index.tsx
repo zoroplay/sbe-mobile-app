@@ -7,18 +7,15 @@ import {
 } from "react-native";
 import BetslipButton from "@/components/BetslipButton";
 import { FlatList } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
 import {
   useFixturesHighlightsQuery,
   useSportsMenuQuery,
   useTopBetsQuery,
 } from "@/store/services/bets.service";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import {
   categoryIconMap,
-  sportIconMap,
-  SportName,
   staticNav,
 } from "@/data/nav/data";
 import CasinoSection from "@/components/blocks/casino/CasinoSection";
@@ -128,7 +125,7 @@ export default function TabOneScreen() {
     icon?: React.ReactNode;
   }[] = [...staticNav, ...sportsNav];
   const topBets: {
-    id: string;
+    id: number| string;
     name: string;
     sport_id?: string;
     tournament_id?: string;
@@ -137,8 +134,8 @@ export default function TabOneScreen() {
     ..._top_bets.map((item) => ({
       id: item.tournamentName,
       name: item.tournamentName,
-      sport_id: item.sportID,
-      tournament_id: item.tournamentID,
+      sport_id: String(item.sportID),
+      tournament_id: String(item.tournamentID),
     })),
   ];
 
@@ -222,7 +219,7 @@ export default function TabOneScreen() {
                 <Text style={styles.filterBarText}>{item.name}</Text>
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={(item,index) => String(index)}
             showsHorizontalScrollIndicator={false}
           />
         </View>

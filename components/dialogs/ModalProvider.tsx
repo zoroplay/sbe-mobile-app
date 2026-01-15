@@ -3,7 +3,6 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { closeModal } from "@/store/features/slice/modal.slice";
 import { MODAL_COMPONENTS } from "@/store/features/types";
 import LoginBottomModal from "./components/LoginBottomModal";
-import { View } from "react-native";
 import RegisterBottomModal from "./components/RegisterBottomModal";
 import BetslipModal from "./components/BetslipModal";
 import GameOptions from "./components/GameOptions";
@@ -12,7 +11,6 @@ import ChangePasswordModal from "./components/ChangePassword";
 
 const ModalProvider: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.user);
   const { is_open, component_name, dismissible } = useAppSelector(
     (state) => state.modal
   );
@@ -29,44 +27,37 @@ const ModalProvider: React.FC = () => {
     }
   }, [is_open]);
 
-  if (!shouldRender) return null;
+  // Only render if there's an active modal and it's visible
+  if (!shouldRender || !component_name) {
+    return null;
+  }
 
-  const commonProps = {
-    visible: is_open,
-    onClose: () => dispatch(closeModal()),
-    dismissible,
+  const handleClose = () => {
+    if (dismissible !== false) {
+      dispatch(closeModal());
+    }
   };
 
   const renderModal = () => {
     switch (component_name) {
       case MODAL_COMPONENTS.LOGIN_MODAL:
-        return <LoginBottomModal onClose={commonProps.onClose} />;
+        return <LoginBottomModal onClose={handleClose} />;
       case MODAL_COMPONENTS.REGISTER_MODAL:
-        return <RegisterBottomModal onClose={commonProps.onClose} />;
+        return <RegisterBottomModal onClose={handleClose} />;
       case MODAL_COMPONENTS.BETSLIP_MODAL:
-        return <BetslipModal onClose={commonProps.onClose} />;
+        return <BetslipModal onClose={handleClose} />;
       case MODAL_COMPONENTS.GAME_OPTIONS_MODAL:
-        return <GameOptions onClose={commonProps.onClose} />;
+        return <GameOptions onClose={handleClose} />;
       case MODAL_COMPONENTS.SUCCESS_MODAL:
-        return <SuccessModal onClose={commonProps.onClose} />;
+        return <SuccessModal onClose={handleClose} />;
       case MODAL_COMPONENTS.CHANGE_PASSWORD_MODAL:
-        return <ChangePasswordModal onClose={commonProps.onClose} />;
+        return <ChangePasswordModal onClose={handleClose} />;
       default:
         return null;
     }
   };
-  // Only render if there's an active modal
-  if (!component_name) {
-    return null;
-  }
-  return (
-    <View
-    // className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
-    // onClick={handleBackdropClick}
-    >
-      {renderModal()}
-    </View>
-  );
+
+  return <>{renderModal()}</>;
 };
 
 export default ModalProvider;

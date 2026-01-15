@@ -99,6 +99,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     display: "flex",
     flexDirection: "column",
+    justifyContent:"space-between",
+    alignItems:'flex-start',
     gap: 8,
     elevation: 2,
   },
@@ -127,6 +129,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
     textAlign: "center",
+    maxWidth: 90,
+    // minHeight: 34,
   },
   logo: {
     width: 45,

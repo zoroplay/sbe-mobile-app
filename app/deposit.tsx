@@ -29,6 +29,9 @@ const deposit = () => {
   } | null>(null);
   const [amount, setAmount] = useState("");
   const balance = user?.availableBalance || 0;
+  
+  // Move all hooks to top level - BEFORE any conditional returns
+  const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
   useEffect(() => {
     if (isSuccess && !data?.data) {
@@ -41,11 +44,9 @@ const deposit = () => {
       router.back();
     }
   }, [isSuccess, data, selectedIdx]);
-  if (isLoading || !data?.data) {
-    // Animated skeleton loader cards for payment methods
-    const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
-    useEffect(() => {
+  useEffect(() => {
+    if (isLoading || !data?.data) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -60,7 +61,12 @@ const deposit = () => {
           }),
         ])
       ).start();
-    }, [pulseAnim]);
+    }
+  }, [pulseAnim, isLoading, data]);
+
+  // NOW we can do conditional rendering after all hooks are called
+  if (isLoading || !data?.data) {
+    // Animated skeleton loader cards for payment methods
 
     return (
       <View
