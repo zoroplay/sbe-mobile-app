@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "bet24",
+    "slug": "bet24",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "bet24",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mambadev.bet24"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "ACCESS_TOKEN": "b_winners_access_token",
+      "REFRESH_TOKEN": "b_winners_refresh_token",
+      "CLIENT_ID": 4,
+      "API_BASE_URL": "https://api.staging.sportsbookengine.com/api/v2",
+      "EXPO_OFFLINE": 1,
+      "router": {
+        "origin": "https://n"
+      },
+      "eas": {
+        "projectId": "cddaaf86-427e-4bc1-815a-9ef11916fc0b"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.mambadev.bet24"
+    }
+  }
+}

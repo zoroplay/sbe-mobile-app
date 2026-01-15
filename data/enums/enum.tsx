@@ -1,0 +1,71 @@
+export enum OUTCOME_NAME_ENUM {
+  HOME = "1",
+  DRAW = "draw",
+  AWAY = "2",
+}
+
+export enum MARKET_NAME_ENUM {
+  HOME = "1",
+  DRAW = "1x2",
+  AWAY = "2",
+}
+
+export enum DISPLAY_NAME_ENUM {
+  HOME = "1",
+  DRAW = "X",
+  AWAY = "2",
+  HOME_DRAW = "1X",
+  HOME_AWAY = "12",
+  DRAW_AWAY = "X2",
+}
+
+export enum BET_TYPES_ENUM {
+  MULTIPLE = "multiple",
+  COMBINED = "combined",
+  SPLIT = "split",
+}
+
+export enum MARKET_SECTION {
+  ONE_X_TWO = 1,
+  DOUBLE_CHANCE = 10,
+  DNB = 11,
+  FT_HANDICAP = 14,
+  OVER_UNDER = 18,
+  HOME_TOTAL = 19,
+  TENNIS_WINNER = 186,
+  NFL_HSH = 52,
+  NFL_ONE_X_TWO = 60,
+  AWAY_TOTAL = 20,
+  EXACT_GOALS = 21,
+  HOME_EXACT_GOALS = 23,
+  AWAY_EXACT_GOALS = 24,
+  ODD_EVEN = 26,
+  HOME_O_E = 27,
+  AWAY_O_E = 28,
+  GOAL_NOGOAL = 29,
+  TEAM_TO_SCORE = 30,
+  HOME_CLEAN_SHEET = 31,
+  AWAY_CLEAN_SHEET = 32,
+  HOME_WIN_TO_NIL = 33,
+  AWAY_WIN_TO_NIL = 34,
+  ONE_TWO_GG_NG = 35,
+  OE_HT = 74,
+  HT_GG_NG = 75,
+  ONE_TWO_GG_NG_HT = 78,
+  GG_NG_NT = 95,
+  DC_GG_NG = 546,
+  FIRST_GOAL_SCORER = 38,
+  ONE_X_TWO_OVER_UNDER = 37,
+  ANYTIME_GOALSCORER = 40,
+  HT_FT_CORRECT_SCORE = 46,
+  HT_UNDER_OVER = 68,
+}
+
+export enum BET_STATUS_CODES {
+  BET_PENDING = 0,
+  BET_LOST = 1,
+  BET_WON = 2,
+  BET_VOIDED = 3,
+  BET_CANCELLED = -1,
+  BET_CASHOUT = 5,
+}

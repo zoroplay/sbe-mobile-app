@@ -1,0 +1,10 @@
+export { default as app } from "./app.slice";
+export { default as user } from "./user.slice";
+export { default as modal } from "./modal.slice";
+export { default as notification } from "./notification.slice";
+export { default as betting } from "./betting.slice";
+export { default as bottomSheet } from "./bottomSheet.slice";
+export { default as fixtures } from "./fixtures.slice";
+export { default as live_games } from "./live-games.slice";
+export { default as cashdesk } from "./cashdesk.slice";
+export { default as withdrawal } from "./withdrawal.slice";
