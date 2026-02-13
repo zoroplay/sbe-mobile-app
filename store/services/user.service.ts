@@ -56,7 +56,7 @@ const UserApiSlice = apiSlice.injectEndpoints({
       query: () => ({
         url: AppHelper.buildQueryUrl(
           USER_ACTIONS.GET_USER_COMMISSION_BALANCE,
-          {}
+          {},
         ),
         method: REQUEST_ACTIONS.GET,
       }),
@@ -67,7 +67,7 @@ const UserApiSlice = apiSlice.injectEndpoints({
             setUserBalance({
               availableBalance: data.data.available_balance,
               commissionBalance: data.data.commission_balance,
-            })
+            }),
           );
         } catch (error) {
           // Silently handle error
@@ -104,7 +104,7 @@ const UserApiSlice = apiSlice.injectEndpoints({
           url: AppHelper.buildQueryUrl(USER_ACTIONS.COMMISSION_PROFILE, {}),
           method: REQUEST_ACTIONS.GET,
         }),
-      }
+      },
     ),
     commissionPayout: builder.mutation<any, CommissionRequest>({
       query: (body) => ({
@@ -156,6 +156,12 @@ const UserApiSlice = apiSlice.injectEndpoints({
         method: REQUEST_ACTIONS.GET,
       }),
     }),
+    getBonusList: builder.query<any, void>({
+      query: () => ({
+        url: AppHelper.buildQueryUrl(USER_ACTIONS.BONUS_LIST, {}),
+        method: REQUEST_ACTIONS.GET,
+      }),
+    }),
   }),
   overrideExisting: true,
 });
@@ -173,4 +179,5 @@ export const {
   usePayoutCommissionMutation,
   useDepositCommissionMutation,
   useGetAgentUsersQuery,
+  useGetBonusListQuery,
 } = UserApiSlice;

@@ -4,6 +4,7 @@ import { AUTH_ACTIONS } from "./constants/route";
 import { REQUEST_ACTIONS } from "./constants/request-types";
 import { setGlobalVariables } from "../features/slice/app.slice";
 import { AppHelper } from "@/utils/helper";
+import { setBonusList } from "../features/slice/betting.slice";
 
 const AuthApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -46,8 +47,30 @@ const AuthApiSlice = apiSlice.injectEndpoints({
               single_ticket_length: data.data.SingleTicketLenght,
               max_no_of_selection: data.data.MaxNoOfSelection,
               wth_tax: data.data.wthTax,
-            })
+            }),
           );
+        } catch (error) {
+          return;
+        }
+      },
+    }),
+    getCMS: builder.query<any, { page: string }>({
+      query: ({ page }) => ({
+        url: AppHelper.buildQueryUrl(AUTH_ACTIONS.GET_CMS, {
+          page,
+        }),
+        method: REQUEST_ACTIONS.GET,
+      }),
+    }),
+    getBonusList: builder.query<any, void>({
+      query: () => ({
+        url: AppHelper.buildQueryUrl(AUTH_ACTIONS.BONUS_LIST, {}),
+        method: REQUEST_ACTIONS.GET,
+      }),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(setBonusList(data.data || []));
         } catch (error) {
           return;
         }
@@ -56,4 +79,8 @@ const AuthApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useGetGlobalVariablesQuery } = AuthApiSlice;
+export const {
+  useGetGlobalVariablesQuery,
+  useGetCMSQuery,
+  useGetBonusListQuery,
+} = AuthApiSlice;

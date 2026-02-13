@@ -256,58 +256,58 @@ export const staticNav = [
   {
     name: "sports",
     link: "/(tabs)/az-menu",
-    icon: <FontAwesome name="soccer-ball-o" size={24} color="white" />,
+    icon: <FontAwesome name="soccer-ball-o" size={20} color="white" />,
   },
   {
     name: "live",
     link: "/live",
-    icon: <MaterialIcons name="live-tv" size={24} color="white" />,
+    icon: <MaterialIcons name="live-tv" size={20} color="white" />,
   },
   {
     name: "casino",
     link: "/(casino)",
-    icon: <MaterialIcons name="casino" size={24} color="white" />,
+    icon: <MaterialIcons name="casino" size={20} color="white" />,
   },
   {
     name: "virtuals",
     // link: "/virtuals",
-    icon: <MaterialIcons name="sports-esports" size={24} color="white" />,
+    icon: <MaterialIcons name="sports-esports" size={20} color="white" />,
   },
   {
     name: "Aviator",
     // link: "/aviator",
-    icon: <FontAwesome name="paper-plane" size={24} color="white" />,
+    icon: <FontAwesome name="paper-plane" size={20} color="white" />,
   },
   {
     name: "livescore",
     // link: "/livescore",
-    icon: <MaterialIcons name="score" size={24} color="white" />,
+    icon: <MaterialIcons name="score" size={20} color="white" />,
   },
   {
     name: "Statistics",
     // link: "/statistics",
-    icon: <FontAwesome name="bar-chart" size={24} color="white" />,
+    icon: <FontAwesome name="bar-chart" size={20} color="white" />,
   },
   {
     name: "promotions",
     // link: "/promotions",
-    icon: <MaterialIcons name="local-offer" size={24} color="white" />,
+    icon: <MaterialIcons name="local-offer" size={20} color="white" />,
   },
 ];
 export const casinoNav = [
   {
     name: "Discover",
     link: "/discover",
-    icon: <FontAwesome6 name="cc-discover" size={24} color="white" />,
+    icon: <FontAwesome6 name="cc-discover" size={20} color="white" />,
   },
   {
     name: "Bonus Games",
     link: "/bonus-games",
-    icon: <MaterialIcons name="games" size={24} color="white" />,
+    icon: <MaterialIcons name="games" size={20} color="white" />,
   },
   {
     name: "QTech Lobby",
     link: "/qtech-lobby",
-    icon: <SimpleLineIcons name="globe-alt" size={24} color="white" />,
+    icon: <SimpleLineIcons name="globe-alt" size={20} color="white" />,
   },
 ];

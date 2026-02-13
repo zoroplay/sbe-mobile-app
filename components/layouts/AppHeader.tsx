@@ -6,6 +6,7 @@ import { useAppSelector } from "@/hooks/useAppDispatch";
 import { router } from "expo-router";
 import { Text } from "../Themed";
 import CurrencyFormatter from "../inputs/CurrencyFormatter";
+import AppImage from "../inputs/AppImage";
 
 export default function AppHeader() {
   const { openModal } = useModal();
@@ -13,12 +14,18 @@ export default function AppHeader() {
 
   return (
     <View style={styles.header}>
-      {/* Logo */}
       <View style={styles.logoContainer}>
-        <Text style={styles.logoBet}>bet</Text>
-        <Text style={styles.logo24}>24</Text>
+        <AppImage
+          imageKey={"logo"}
+          height={32}
+          width={80}
+          style={{
+            height: 34,
+            width: 80,
+            resizeMode: "contain",
+          }}
+        />
       </View>
-      {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.iconButton}>
           <FontAwesome name="search" size={22} color="#C72C3B" />
@@ -95,6 +102,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#22215b",
     borderRadius: 2,
     overflow: "hidden",
+    height: 32,
+    width: 80,
   },
   logoBet: {
     color: "white",
@@ -129,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 1.5,
     borderColor: "#C72C3B",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 4,
     marginHorizontal: 4,
@@ -137,7 +146,7 @@ const styles = StyleSheet.create({
   depositText: {
     color: "#C72C3B",
     fontFamily: "PoppinsSemiBold",
-    fontSize: 15,
+    fontSize: 14,
   },
   balanceBox: {
     borderWidth: 1.5,
@@ -157,10 +166,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   joinNowButton: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#C72C3B",
     backgroundColor: "#C72C3B",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 4,
     marginHorizontal: 4,
@@ -168,18 +177,18 @@ const styles = StyleSheet.create({
   joinNowText: {
     color: "white",
     fontFamily: "PoppinsSemiBold",
-    fontSize: 15,
+    fontSize: 14,
   },
   loginButton: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#C72C3B",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 4,
   },
   loginText: {
     color: "#C72C3B",
     fontFamily: "PoppinsSemiBold",
-    fontSize: 15,
+    fontSize: 14,
   },
 });

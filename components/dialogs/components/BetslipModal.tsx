@@ -3,6 +3,7 @@ import {
   Dimensions,
   ScrollView,
   StyleSheet,
+  Switch,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -22,6 +23,7 @@ import { useAppSelector } from "@/hooks/useAppDispatch";
 import CurrencyFormatter from "@/components/inputs/CurrencyFormatter";
 import { Text } from "@/components/Themed";
 import SingleSearchInput from "@/components/inputs/SingleSearchInput";
+import { MODAL_COMPONENTS } from "@/store/features/types";
 
 interface LoginBottomModalProps {
   onClose: () => void;
@@ -41,10 +43,12 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
     total_odds,
     clearBets,
     addBet,
+    bonus_list,
     stake,
     updateStake,
     updateComboStake,
     potential_winnings,
+    coupon_data,
   } = useBetting();
   const {
     isConfirming,
@@ -80,9 +84,13 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
       }
       return (finalPayout + maxBonus).toFixed(2);
     }
-    return potential_winnings?.toFixed
-      ? potential_winnings.toFixed(2)
-      : potential_winnings;
+    return String(
+      global_variables?.max_payout &&
+        Number(global_variables?.max_payout) + Number(coupon_data.max_bonus) <
+          Number(potential_winnings)
+        ? global_variables?.max_payout
+        : potential_winnings + Number(coupon_data.max_bonus),
+    );
   })();
 
   const DEFAULT_HEIGHT =
@@ -146,8 +154,8 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                 },
                 element_id: selection.eventId,
                 bet_type: "pre",
-                global_vars: {},
-                bonus_list: [],
+                global_vars: global_variables!,
+                bonus_list: bonus_list,
               });
             });
 
@@ -167,7 +175,7 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
         }
       }
     },
-    [findBet, clearBets, addBet]
+    [findBet, clearBets, addBet],
   );
 
   useEffect(() => {
@@ -185,11 +193,14 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
     clearBets();
   };
 
-  const handleBetSettings = () => {
-    // Open bet settings modal
-    console.log("Open bet settings");
-  };
+  const [showBetSettings, setShowBetSettings] = useState(false);
+  const [autoRemoveSuspended, setAutoRemoveSuspended] = useState(false);
+  const [autoAcceptOdds, setAutoAcceptOdds] = useState(true);
+  const [retainSelections, setRetainSelections] = useState(false);
 
+  const handleBetSettings = () => {
+    setShowBetSettings(true);
+  };
 
   return (
     <BottomModal
@@ -228,6 +239,112 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
               <Text style={styles.actionText}>Bet Settings</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Bet Settings Popup */}
+          {showBetSettings && (
+            <View
+              style={{
+                position: "absolute",
+                top: 80,
+                left: 20,
+                right: 20,
+                backgroundColor: "#181A20",
+                borderRadius: 12,
+                padding: 20,
+                zIndex: 10000,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 16,
+                }}
+              >
+                Bet Settings
+              </Text>
+              {/* My Stakes row */}
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 16, flex: 1 }}>
+                  My Stakes
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+              {/* Auto-remove suspended events */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 16, flex: 1 }}>
+                  Auto-remove suspended events
+                </Text>
+                <Switch
+                  value={autoRemoveSuspended}
+                  onValueChange={setAutoRemoveSuspended}
+                  trackColor={{ false: "#444", true: "#2ecc40" }}
+                  thumbColor={autoRemoveSuspended ? "#2ecc40" : "#888"}
+                />
+              </View>
+              {/* Auto-accept odds changes */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 16, flex: 1 }}>
+                  Auto-accept odds changes
+                </Text>
+                <Switch
+                  value={autoAcceptOdds}
+                  onValueChange={setAutoAcceptOdds}
+                  trackColor={{ false: "#444", true: "#2ecc40" }}
+                  thumbColor={autoAcceptOdds ? "#2ecc40" : "#888"}
+                />
+              </View>
+              {/* Retain selections after Rebet */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 16, flex: 1 }}>
+                  Retain selections after Rebet
+                </Text>
+                <Switch
+                  value={retainSelections}
+                  onValueChange={setRetainSelections}
+                  trackColor={{ false: "#444", true: "#2ecc40" }}
+                  thumbColor={retainSelections ? "#2ecc40" : "#888"}
+                />
+              </View>
+              {/* Close button */}
+              <TouchableOpacity
+                style={{ alignSelf: "flex-end", marginTop: 8, padding: 8 }}
+                onPress={() => setShowBetSettings(false)}
+              >
+                <Text style={{ color: "#3498db", fontSize: 16 }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Bet Type Tabs */}
           {selected_bets.length > 1 && (
@@ -283,66 +400,81 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                 />
               ))}
               {/* Add padding at bottom to prevent content hiding under fixed footer */}
-              <View style={{ height: betType === "single" ? 400 : 400 }} />
+              <View
+                style={{
+                  height: isConfirming
+                    ? betType === "single"
+                      ? 400
+                      : 400
+                    : 60,
+                }}
+              />
             </ScrollView>
 
             {/* Fixed Bottom Section - Only show for Multiple bets */}
             <View style={styles.fixedBottomContainer}>
               {/* Bet Details Card */}
-              <View style={styles.detailsCard}>
-                {/* Stake Input */}
-                <View style={styles.stakeInputContainer}>
-                  <Text style={styles.stakeLabel}>Total Stake</Text>
-                  <Input
-                    value={String(stake)}
-                    placeholder="0.00"
-                    onChangeText={(text) => {
-                      updateStake({
-                        stake: Number(text.replace(/[^\d.]/g, "")),
-                      });
-                    }}
-                    keyboardType="numeric"
-                    num_select_placeholder={global_variables?.currency_code?? ''}
-                    type="num_select"
-                    wrapperStyle={styles.stakeInputWrapper}
-                    inputStyle={styles.stakeInputText}
-                    suffixStyle={styles.stakeSuffix}
-                    placeholderTextColor="#6b7280"
-                  />
-                </View>
+              {isConfirming && (
+                <View style={styles.detailsCard}>
+                  {/* Stake Input */}
+                  <View style={styles.stakeInputContainer}>
+                    <Text style={styles.stakeLabel}>Total Stake</Text>
+                    <Input
+                      value={String(stake)}
+                      placeholder="0.00"
+                      onChangeText={(text) => {
+                        updateStake({
+                          stake: Number(text.replace(/[^\d.]/g, "")),
+                        });
+                      }}
+                      keyboardType="numeric"
+                      num_select_placeholder={
+                        global_variables?.currency_code ?? ""
+                      }
+                      type="num_select"
+                      wrapperStyle={styles.stakeInputWrapper}
+                      inputStyle={styles.stakeInputText}
+                      suffixStyle={styles.stakeSuffix}
+                      placeholderTextColor="#6b7280"
+                    />
+                  </View>
 
-                {/* Divider */}
-                <View style={styles.divider} />
+                  {/* Divider */}
+                  <View style={styles.divider} />
 
-                {/* Bet Summary */}
-                <View style={styles.summaryContainer}>
-                  <DetailRow
-                    label="Stake After Tax"
-                    value={stakeAfterTax.toFixed(2)}
-                  />
-                  <DetailRow label="Total Odds" value={total_odds.toFixed(2)} />
-                  <DetailRow label="Max Bonus" value={maxBonus.toFixed(2)} />
-                  <DetailRow
-                    label="Excise Tax"
-                    value={(stake * (exciseTax / 100)).toFixed(2)}
-                  />
-                  <DetailRow
+                  {/* Bet Summary */}
+                  <View style={styles.summaryContainer}>
+                    <DetailRow
+                      label="Stake After Tax"
+                      value={stakeAfterTax.toFixed(2)}
+                    />
+                    <DetailRow
+                      label="Total Odds"
+                      value={total_odds.toFixed(2)}
+                    />
+                    {/* <DetailRow label="Max Bonus" value={maxBonus.toFixed(2)} /> */}
+                    <DetailRow
+                      label="Excise Tax"
+                      value={(stake * (exciseTax / 100)).toFixed(2)}
+                    />
+                    {/* <DetailRow
                     label="Withholding Tax"
                     value={wthTaxAmount.toFixed(2)}
-                  />
-                </View>
+                  /> */}
+                  </View>
 
-                {/* Potential Win - Highlighted */}
-                <View style={styles.potentialWinContainer}>
-                  <Text style={styles.potentialWinLabel}>Potential Win</Text>
-                  <CurrencyFormatter
-                    amount={potentialWinValue}
-                    textStyle={styles.potentialWinValue}
-                    decimalStyle={styles.potentialWinDecimal}
-                    allowToggle={false}
-                  />
+                  {/* Potential Win - Highlighted */}
+                  <View style={styles.potentialWinContainer}>
+                    <Text style={styles.potentialWinLabel}>Potential Win</Text>
+                    <CurrencyFormatter
+                      amount={potentialWinValue}
+                      textStyle={styles.potentialWinValue}
+                      decimalStyle={styles.potentialWinDecimal}
+                      allowToggle={false}
+                    />
+                  </View>
                 </View>
-              </View>
+              )}
 
               {/* If not authenticated, show login button */}
               {!is_authenticated ? (
@@ -359,7 +491,7 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                     ]}
                     onPress={() => {
                       openModal({
-                        modal_name: "LOGIN_MODAL",
+                        modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
                       });
                     }}
                   >
@@ -568,8 +700,8 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                       },
                       element_id: selection.eventId,
                       bet_type: "pre",
-                      global_vars: {},
-                      bonus_list: [],
+                      global_vars: global_variables!,
+                      bonus_list: bonus_list,
                     });
                   });
 
@@ -627,7 +759,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 10,
+    padding: 8,
     paddingBottom: 6,
     backgroundColor: "#F5F5F5",
     borderBottomWidth: 1,
@@ -635,7 +767,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#000",
-    fontSize: 17,
+    fontSize: 15,
     // fontWeight: "bold",
     fontFamily: "PoppinsSemibold",
   },
@@ -645,7 +777,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: "#F5F5F5",
     borderBottomWidth: 1,
@@ -657,7 +789,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionText: {
-    fontSize: 13,
+    fontSize: 11,
     color: "#374151",
     fontFamily: "PoppinsSemibold",
   },
@@ -714,20 +846,20 @@ const styles = StyleSheet.create({
   // Details Card
   detailsCard: {
     backgroundColor: "#1A1D26",
-    marginTop: 12,
-    margin: 8,
-    marginBottom: 8,
+    marginTop: 8,
+    margin: 4,
+    marginBottom: 4,
     borderRadius: 12,
-    padding: 12,
+    padding: 10,
   },
   stakeInputContainer: {
     // marginBottom: 12,
   },
   stakeLabel: {
     color: "#A0A0A0",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -739,25 +871,25 @@ const styles = StyleSheet.create({
   },
   stakeInputText: {
     color: "#ddd",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "600",
     height: 48,
     backgroundColor: "#0D0F15",
   },
   stakeSuffix: {
     color: "#989898",
-    fontSize: 16,
+    fontSize: 14,
     // fontWeight: "700",
   },
 
   divider: {
     height: 1,
     backgroundColor: "#2A2D36",
-    marginVertical: 12,
+    marginVertical: 8,
     marginTop: 1,
   },
   summaryContainer: {
-    gap: 8,
+    gap: 6,
   },
   detailRow: {
     flexDirection: "row",
@@ -766,12 +898,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     color: "#A0A0A0",
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: "500",
   },
   detailValue: {
     color: "#fff",
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: "600",
   },
   potentialWinContainer: {
@@ -780,22 +912,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#C72C3B",
     borderRadius: 8,
-    padding: 8,
-    marginTop: 10,
+    padding: 4,
+    paddingInline: 8,
+    marginTop: 8,
   },
   potentialWinLabel: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: 12,
   },
   potentialWinValue: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 14,
   },
   potentialWinDecimal: {
     color: "#ddd",
-    fontSize: 14,
+    fontSize: 12,
   },
 
   // Action Buttons
@@ -812,7 +945,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2A2D36",
     alignItems: "center",
     justifyContent: "center",
-    height: 52,
+    height: 48,
     borderRadius: 8,
   },
   bookBtnText: {
@@ -827,7 +960,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#C72C3B",
     alignItems: "center",
     justifyContent: "center",
-    height: 52,
+    height: 48,
     borderRadius: 8,
   },
   placeBtnText: {
@@ -871,14 +1004,14 @@ const styles = StyleSheet.create({
   bookingInput: {
     backgroundColor: "#F5F5F5",
     borderRadius: 8,
-    height: 50,
+    height: 48,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 14,
   },
   loadBtn: {
     backgroundColor: "#2A2D36",
     borderRadius: 8,
-    height: 52,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -887,7 +1020,7 @@ const styles = StyleSheet.create({
   },
   loadBtnText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
   },
 });

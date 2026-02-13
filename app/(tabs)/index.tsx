@@ -14,10 +14,7 @@ import {
 } from "@/store/services/bets.service";
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
-import {
-  categoryIconMap,
-  staticNav,
-} from "@/data/nav/data";
+import { categoryIconMap, staticNav } from "@/data/nav/data";
 import CasinoSection from "@/components/blocks/casino/CasinoSection";
 import LiveSection from "@/components/ui/LiveSection";
 import { Text } from "@/components/Themed";
@@ -64,7 +61,7 @@ export default function TabOneScreen() {
     refetch,
   } = useFixturesHighlightsQuery({
     sport_id: String(
-      selectedSport?.sport_id ? Number(selectedSport.sport_id ?? 1) : 1
+      selectedSport?.sport_id ? Number(selectedSport.sport_id ?? 1) : 1,
     ),
   });
   const handleBetslipPress = () => {
@@ -89,7 +86,7 @@ export default function TabOneScreen() {
             useNativeDriver: true,
             easing: Easing.inOut(Easing.ease),
           }),
-        ])
+        ]),
       );
       loop.start();
     }
@@ -102,11 +99,22 @@ export default function TabOneScreen() {
     sport_id: string;
     name: string;
     total: number;
-  }[] = (sportsData || []).map((sport) => ({
-    sport_id: sport.sportID,
-    name: sport.sportName,
-    total: sport.total,
-  }));
+  }[] = (() => {
+    const arr = (sportsData || []).map((sport) => ({
+      sport_id: sport.sportID,
+      name: sport.sportName,
+      total: sport.total,
+    }));
+    // Move 'Soccer' (case-insensitive) to the front
+    const soccerIndex = arr.findIndex(
+      (s) => s.name && s.name.toLowerCase() === "soccer",
+    );
+    if (soccerIndex > 0) {
+      const [soccer] = arr.splice(soccerIndex, 1);
+      arr.unshift(soccer);
+    }
+    return arr;
+  })();
   // Ensure first sport is selected by default
   useEffect(() => {
     if (!selectedSport && sportsNav.length > 0) {
@@ -125,7 +133,7 @@ export default function TabOneScreen() {
     icon?: React.ReactNode;
   }[] = [...staticNav, ...sportsNav];
   const topBets: {
-    id: number| string;
+    id: number | string;
     name: string;
     sport_id?: string;
     tournament_id?: string;
@@ -160,7 +168,7 @@ export default function TabOneScreen() {
                       setAzMenu({
                         sport_id: item.sport_id,
                         sport_name: item.name,
-                      })
+                      }),
                     );
                     setTimeout(() => {
                       router.push(`/(tabs)/az-menu`);
@@ -174,14 +182,14 @@ export default function TabOneScreen() {
                   categoryIconMap({
                     name: item.name,
                     color: "#fff",
-                    font_size: 24,
+                    font_size: 20,
                   })}
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   style={{
                     color: "#B9B9BA",
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: "600",
                     fontFamily: "PoppinsSemibold",
                   }}
@@ -190,7 +198,7 @@ export default function TabOneScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.name}
+            keyExtractor={(item, idx) => idx.toString()}
             showsHorizontalScrollIndicator={false}
           />
         </View>
@@ -208,7 +216,7 @@ export default function TabOneScreen() {
                       setSportsPageQuery({
                         sport_id: Number(item.sport_id),
                         tournament_id: Number(item.tournament_id),
-                      })
+                      }),
                     );
                     router.push(`/modal`);
                   }
@@ -219,7 +227,7 @@ export default function TabOneScreen() {
                 <Text style={styles.filterBarText}>{item.name}</Text>
               </TouchableOpacity>
             )}
-            keyExtractor={(item,index) => String(index)}
+            keyExtractor={(item, index) => String(index)}
             showsHorizontalScrollIndicator={false}
           />
         </View>
@@ -232,7 +240,7 @@ export default function TabOneScreen() {
             <>
               <BottomTabNav
                 sport_id={Number(
-                  (selectedSport?.sport_id ?? sportsNav?.[0]?.sport_id) || 0
+                  (selectedSport?.sport_id ?? sportsNav?.[0]?.sport_id) || 0,
                 )}
                 isLoading={isFetching}
               />
@@ -252,14 +260,21 @@ export default function TabOneScreen() {
                   display: "flex",
                   flexDirection: "row",
                   width: "100%",
-                  gap: 4,
+                  gap: 2,
                   backgroundColor: "rgb(6,0,25)",
                 }}
               >
-                <View style={{ padding: 6, backgroundColor: "rgb(6,0,25)" }}>
+                <View
+                  style={{
+                    padding: 4,
+                    paddingTop: 10,
+                    paddingBottom: 2,
+                    backgroundColor: "rgb(6,0,25)",
+                  }}
+                >
                   <Text
                     style={{
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: "600",
                       color: "#f1f1f1",
                     }}
@@ -314,7 +329,7 @@ export default function TabOneScreen() {
                           color: "#ffffff",
                           fontWeight: "600",
                           letterSpacing: 0.6,
-                          fontSize: 16,
+                          fontSize: 14,
                         }}
                       >
                         {item.name}
@@ -355,21 +370,21 @@ export default function TabOneScreen() {
                   display: "flex",
                   flexDirection: "row",
                   width: "100%",
-                  gap: 4,
+                  gap: 2,
                   backgroundColor: "rgb(6,0,25)",
                 }}
               >
                 <View
                   style={{
-                    padding: 6,
+                    padding: 4,
                     paddingTop: 10,
-                    paddingBottom: 4,
+                    paddingBottom: 2,
                     backgroundColor: "rgb(6,0,25)",
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: "600",
                       color: "#f1f1f1",
                     }}
@@ -384,7 +399,13 @@ export default function TabOneScreen() {
                     backgroundColor: "#4a4a4a",
                   }}
                 />
-                <View style={{ padding: 6, backgroundColor: "rgb(6,0,25)" }}>
+                <View
+                  style={{
+                    padding: 6,
+                    backgroundColor: "rgb(6,0,25)",
+                    flex: 1,
+                  }}
+                >
                   {sportsLoading ? (
                     <View style={{ flexDirection: "row" }}>
                       {Array.from({ length: 5 }).map((_, idx) => (
@@ -395,7 +416,7 @@ export default function TabOneScreen() {
                             height: 36,
                             borderRadius: 8,
                             backgroundColor: "#222",
-                            marginRight: 8,
+                            marginRight: 4,
                             // marginBottom: 8,
                             opacity: pulseAnim,
                           }}
@@ -431,9 +452,9 @@ export default function TabOneScreen() {
                           <Text
                             style={{
                               color: "#ffffff",
-                              // fontWeight: "600",
+                              fontWeight: "600",
                               letterSpacing: 0.6,
-                              fontSize: 16,
+                              fontSize: 14,
                             }}
                           >
                             {item.name}
@@ -453,7 +474,7 @@ export default function TabOneScreen() {
                           )}
                         </TouchableOpacity>
                       )}
-                      keyExtractor={(item) => String(item.name)}
+                      keyExtractor={(item, idx) => idx.toString()}
                       showsHorizontalScrollIndicator={false}
                       ItemSeparatorComponent={() => (
                         <View style={styles.horizontalSeparator} />
@@ -465,7 +486,7 @@ export default function TabOneScreen() {
             </View>
           )}
           // REMOVE stickyHeaderIndices to avoid scroll locking
-          keyExtractor={(item) => item.key}
+          keyExtractor={(item, idx) => idx.toString()}
         />
       </View>
 
@@ -484,6 +505,7 @@ const styles = StyleSheet.create({
   top_bar_wrapper: {
     zIndex: 10,
     backgroundColor: "rgb(6,0,25)",
+    paddingBlock: 4,
     // Optionally add shadow or elevation for sticky effect
   },
   horizontalSeparator: {
@@ -511,8 +533,8 @@ const styles = StyleSheet.create({
     borderColor: "#2a2a2a",
     borderWidth: 1,
     borderRadius: 4,
-    height: 60,
-    width: 80,
+    height: 54,
+    width: 70,
     marginInline: 2,
     padding: 2,
     paddingBlock: 8,

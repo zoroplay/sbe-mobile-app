@@ -70,7 +70,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
         isAnimating.current = false;
       });
     },
-    [translateY]
+    [translateY],
   );
 
   // Handle closing the modal
@@ -182,7 +182,10 @@ const BottomModal: React.FC<BottomModalProps> = ({
         />
         {/* Overlay for outside click, only intercepts touches outside modal */}
         <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <View style={styles.backdropTouchable} pointerEvents={dismissible ? "auto" : "none"} />
+          <View
+            style={styles.backdropTouchable}
+            pointerEvents={dismissible ? "auto" : "none"}
+          />
         </TouchableWithoutFeedback>
         {/* Modal content above overlay, does not get intercepted */}
         <Animated.View
@@ -192,8 +195,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
               height: modalHeight,
               maxHeight: SCREEN_HEIGHT * 0.9,
               transform: [{ translateY }],
-              backgroundColor: isDark ? "#000" : "#fff",
-              borderTopColor: isDark ? "#1f2937" : "#e5e7eb",
+              backgroundColor: "#fff",
+              borderTopColor: "#e5e7eb",
             },
           ]}
           pointerEvents="box-none"
@@ -204,7 +207,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
               <View
                 style={[
                   styles.dragIndicatorContainer,
-                  { backgroundColor: isDark ? "#000" : "#fff" },
+                  { backgroundColor: "#fff" },
                 ]}
                 pointerEvents="auto"
                 accessible={true}
@@ -215,10 +218,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                 hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
               >
                 <View
-                  style={[
-                    styles.dragIndicator,
-                    { backgroundColor: isDark ? "#374151" : "#d1d5db" },
-                  ]}
+                  style={[styles.dragIndicator, { backgroundColor: "#d1d5db" }]}
                 />
               </View>
             </TouchableWithoutFeedback>
@@ -227,14 +227,11 @@ const BottomModal: React.FC<BottomModalProps> = ({
             <View
               style={[
                 styles.dragIndicatorContainer,
-                { backgroundColor: isDark ? "#000" : "#fff" },
+                { backgroundColor: "#fff" },
               ]}
             >
               <View
-                style={[
-                  styles.dragIndicator,
-                  { backgroundColor: isDark ? "#374151" : "#d1d5db" },
-                ]}
+                style={[styles.dragIndicator, { backgroundColor: "#d1d5db" }]}
               />
             </View>
           )}

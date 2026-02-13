@@ -46,7 +46,6 @@ const LoginBottomModal = ({ onClose }: LoginBottomModalProps) => {
         ) : null}
 
         <Input
-          type="phone"
           value={formData.username}
           placeholder="Mobile Number"
           onChangeText={(text) =>

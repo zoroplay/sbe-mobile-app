@@ -21,7 +21,7 @@ import { Text } from "../Themed";
 
 const LiveSection = () => {
   const { live_fixtures, markets } = useAppSelector(
-    (state) => state.live_games
+    (state) => state.live_games,
   );
   // const {
   //   subscribeToLiveOdds,
@@ -38,15 +38,25 @@ const LiveSection = () => {
   useEffect(() => {
     if (!selectedSport && live_fixtures.length > 0) {
       const seen = new Set();
-      const first = live_fixtures.find((f) => {
+      // Get unique sports
+      const uniqueSports = live_fixtures.filter((f) => {
         if (seen.has(f.sportID)) return false;
         seen.add(f.sportID);
         return true;
       });
-      if (first) {
+      // Try to find Soccer (case-insensitive)
+      const soccer = uniqueSports.find(
+        (f) => f.sportName && f.sportName.toLowerCase() === "soccer",
+      );
+      if (soccer) {
         setSelectedSport({
-          sport_id: first.sportID,
-          sport_name: first.sportName,
+          sport_id: soccer.sportID,
+          sport_name: soccer.sportName,
+        });
+      } else if (uniqueSports.length > 0) {
+        setSelectedSport({
+          sport_id: uniqueSports[0].sportID,
+          sport_name: uniqueSports[0].sportName,
         });
       }
     }
@@ -70,10 +80,10 @@ const LiveSection = () => {
         updateLiveFixture({
           matchID: matchId.toString(),
           matchStatus: "1", // Suspended
-        })
+        }),
       );
     },
-    [dispatch]
+    [dispatch],
   );
   // Reset selectedSport if it is no longer present in live_fixtures
   useEffect(() => {
@@ -98,7 +108,7 @@ const LiveSection = () => {
         homeScore: String(homeScore),
         awayScore: String(awayScore),
         matchStatus: String(matchStatus),
-      })
+      }),
     );
   };
   const handleLiveOddsChange = useCallback(
@@ -124,12 +134,12 @@ const LiveSection = () => {
                     : outcome.active || 0,
                 status: market.status || 0,
               },
-            })
+            }),
           );
         });
       });
     },
-    [dispatch]
+    [dispatch],
   );
 
   // useEffect(() => {
@@ -166,7 +176,7 @@ const LiveSection = () => {
             useNativeDriver: true,
             easing: Easing.inOut(Easing.ease),
           }),
-        ])
+        ]),
       );
       loop.start();
     }
@@ -182,7 +192,7 @@ const LiveSection = () => {
       acc[fixture.sportID].push(fixture);
       return acc;
     },
-    {} as Record<string, typeof live_fixtures>
+    {} as Record<string, typeof live_fixtures>,
   );
 
   // Determine which fixtures to show for the selected tab
@@ -195,9 +205,9 @@ const LiveSection = () => {
     shownFixtures.some((fixture) =>
       fixture.outcomes?.some?.(
         (outcome) =>
-          outcome.marketID?.toString() === market.marketID?.toString()
-      )
-    )
+          outcome.marketID?.toString() === market.marketID?.toString(),
+      ),
+    ),
   );
 
   return (
@@ -207,21 +217,21 @@ const LiveSection = () => {
           display: "flex",
           flexDirection: "row",
           width: "100%",
-          gap: 4,
+          gap: 2,
           backgroundColor: "rgb(6,0,25)",
         }}
       >
         <View
           style={{
-            padding: 6,
+            padding: 4,
             paddingTop: 10,
-            paddingBottom: 4,
+            paddingBottom: 2,
             backgroundColor: "rgb(6,0,25)",
           }}
         >
           <Text
             style={{
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: "600",
               color: "#f1f1f1",
             }}
@@ -247,7 +257,7 @@ const LiveSection = () => {
                     height: 36,
                     borderRadius: 8,
                     backgroundColor: "#222",
-                    marginRight: 8,
+                    marginRight: 4,
                     // marginBottom: 8,
                     opacity: pulseAnim,
                   }}
@@ -258,7 +268,7 @@ const LiveSection = () => {
             <FlatList
               data={(() => {
                 const seen = new Set();
-                return live_fixtures
+                const arr = live_fixtures
                   .filter((f) => {
                     if (seen.has(f.sportID)) return false;
                     seen.add(f.sportID);
@@ -268,6 +278,15 @@ const LiveSection = () => {
                     sport_id: f.sportID,
                     name: f.sportName,
                   }));
+                // Move 'Soccer' (case-insensitive) to the front
+                const soccerIndex = arr.findIndex(
+                  (s) => s.name && s.name.toLowerCase() === "soccer",
+                );
+                if (soccerIndex > 0) {
+                  const [soccer] = arr.splice(soccerIndex, 1);
+                  arr.unshift(soccer);
+                }
+                return arr;
               })()}
               horizontal
               renderItem={({ item }) => (
@@ -297,7 +316,7 @@ const LiveSection = () => {
                       color: "#ffffff",
                       fontWeight: "600",
                       letterSpacing: 0.6,
-                      fontSize: 16,
+                      fontSize: 14,
                     }}
                   >
                     {item.name}

@@ -40,11 +40,11 @@ export const environmentConfig = {
 
 console.log(
   "getEnvironmentVariable: API_BASE_URL",
-  environmentConfig.API_BASE_URL
+  environmentConfig.API_BASE_URL,
 );
 console.log(
   "getEnvironmentVariable: CLIENT_ID",
-  getEnvironmentVariable(ENVIRONMENT_VARIABLES.CLIENT_ID)
+  getEnvironmentVariable(ENVIRONMENT_VARIABLES.CLIENT_ID),
 );
 console.log("Environment Config:", environmentConfig);
 

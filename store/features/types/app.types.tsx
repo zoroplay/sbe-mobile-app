@@ -29,6 +29,7 @@ export interface GlobalVariables {
   max_no_of_selection: string;
   wth_tax: string;
 }
+
 export interface AppState {
   tournament_details: {
     sport_id: number | null;

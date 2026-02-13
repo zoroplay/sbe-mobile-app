@@ -33,7 +33,8 @@ export const initialBettingState: BettingState = {
   display_duration: 3000,
   betslip: null,
   bet_type: BET_TYPES_ENUM.MULTIPLE,
-  bet_data: null
+  bonus_list: [],
+  bet_data: null,
 };
 
 export const BETTING_ACTIONS = {

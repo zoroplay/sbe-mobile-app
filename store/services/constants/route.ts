@@ -6,6 +6,8 @@ export const AUTH_ACTIONS = {
   AUTH_DETAILS: "/auth/details/:client_id",
   GLOBAL_VARIABLES: "/auth/globalvariables/:client_id",
   CHANGE_PASSWORD: "/auth/update/password",
+  GET_CMS: "/content-management/page?client_id=:client_id&slug=:page",
+  BONUS_LIST: "/bonus/acca-bonus",
 };
 
 export const NOTIFICATIONS_ACTIONS = {
@@ -72,6 +74,8 @@ export enum USER_ACTIONS {
   DEPOSIT_COMMISSION = "/commission/:client_id/deposit-commission",
   GET_AGENT_USERS = "/retail/:client_id/agent-users?agentId=:agent_id",
   SUPER_AGENT_COMMISSION = "/commission/:client_id/preview-super-agent-commission",
+
+  BONUS_LIST = "bonus/user/list?client_id=:client_id",
 }
 export enum WALLET_ACTIONS {
   GET_PAYMENT_METHODS = "/user/wallet/:client_id/payment-methods",

@@ -20,17 +20,39 @@ const MainCard = ({ fixture_data, disabled, is_loading, market_id }: Props) => {
   const marketCardBg = "#fff";
   const marketCardBorder = "#e5e7eb";
 
-  const outcomes =
+  let outcomes =
     fixture_data?.outcomes?.filter(
-      (outcome) => (outcome.marketID || outcome.marketId) === market_id
+      (outcome) => (outcome.marketID || outcome.marketId) === market_id,
     ) || [];
   let title = outcomes.find((item) => !!item.marketName)?.marketName || "";
   if (is_loading) return <SkeletonCard />;
   if (outcomes.length === 0) return null;
   if (!title) return null;
-
+  if (
+    title.toLowerCase().includes("double chance") ||
+    String(market_id) === "10"
+  ) {
+    const order = ["1X", "12", "X2"];
+    outcomes = [...outcomes].sort((a, b) => {
+      const aName = (a.displayName || "").toUpperCase();
+      const bName = (b.displayName || "").toUpperCase();
+      return order.indexOf(aName) - order.indexOf(bName);
+    });
+  }
   // Dynamic grid columns
-  const getGridCols = (len: number) => {
+  const getGridCols = (
+    len: number,
+  ): {
+    flexDirection: "row" | "column" | "row-reverse" | "column-reverse";
+    justifyContent?:
+      | "flex-start"
+      | "flex-end"
+      | "center"
+      | "space-between"
+      | "space-around"
+      | "space-evenly";
+    flexWrap?: "wrap" | "nowrap" | "wrap-reverse";
+  } => {
     if (len <= 1) return { flexDirection: "row" };
     if (len <= 2)
       return { flexDirection: "row", justifyContent: "space-between" };
@@ -65,17 +87,14 @@ const MainCard = ({ fixture_data, disabled, is_loading, market_id }: Props) => {
             name="information-circle-outline"
             size={16}
             color="#888"
-            style={{ marginLeft: 4 }}
+            style={{ marginLeft: 2 }}
           />
         </View>
       </TouchableOpacity>
       {!isCollapsed && (
-        <View style={[styles.grid, getGridCols(outcomes.length)]}>
+        <View style={[styles.grid, getGridCols(outcomes?.length ?? 2)]}>
           {outcomes.map((outcome, index) => (
-            <View
-              style={{ flex: 1, minWidth: 60 }}
-              key={outcome?.outcomeID || index}
-            >
+            <View style={{ flex: 1, minWidth: 60 }} key={index}>
               <OddsButton
                 outcome={outcome}
                 game_id={fixture_data?.gameID as unknown as number}

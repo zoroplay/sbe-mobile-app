@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+} from "react-native";
 import OddsButton from "@/components/buttons/OddsButton";
 import { PreMatchFixture } from "@/store/features/types/fixtures.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,44 +34,13 @@ const CombinationCard = ({
 
   const outcomes =
     fixture_data?.outcomes?.filter(
-      (outcome) => (outcome.marketID || outcome.marketId) === market_id
+      (outcome) => (outcome.marketID || outcome.marketId) === market_id,
     ) || [];
 
-  // Simple parsing for grid structure (mock)
-  // In real app, use the full parsing logic from your web version
-  const primaryOptions = ["1", "x", "2"];
-  const secondaryOptions = ["gg", "ng"];
-  // Structure: primary -> secondary -> outcome
-  const structure: Record<string, Record<string, Outcome>> = {};
-  outcomes.forEach((outcome) => {
-    // Mock parsing: assign by displayName
-    const name = outcome.displayName.toLowerCase();
-    let primary = "";
-    let secondary = "";
-    if (name.includes("1") && name.includes("gg")) {
-      primary = "1";
-      secondary = "gg";
-    } else if (name.includes("1") && name.includes("ng")) {
-      primary = "1";
-      secondary = "ng";
-    } else if (name.includes("x") && name.includes("gg")) {
-      primary = "x";
-      secondary = "gg";
-    } else if (name.includes("x") && name.includes("ng")) {
-      primary = "x";
-      secondary = "ng";
-    } else if (name.includes("2") && name.includes("gg")) {
-      primary = "2";
-      secondary = "gg";
-    } else if (name.includes("2") && name.includes("ng")) {
-      primary = "2";
-      secondary = "ng";
-    }
-    if (primary && secondary) {
-      if (!structure[primary]) structure[primary] = {};
-      structure[primary][secondary] = outcome;
-    }
-  });
+  // Detect if this is a Winning Margin market
+  const isWinningMargin = outcomes[0]?.marketName
+    ?.toLowerCase()
+    .includes("winning margin");
 
   let title =
     outcomes.find((item) => !!item.marketName)?.marketName ||
@@ -73,142 +48,170 @@ const CombinationCard = ({
   if (is_loading) return <SkeletonCard />;
   if (outcomes.length === 0) return null;
 
-  return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: marketCardBg, borderColor: marketCardBorder },
-      ]}
-    >
-      <TouchableOpacity
-        style={styles.headerBtn}
-        onPress={() => setIsCollapsed((prev) => !prev)}
-        activeOpacity={0.7}
+  if (isWinningMargin) {
+    // Group by Home, Away, Draw and margin (1, 2, 3+)
+    const marginOptions = ["1", "2", "3+"];
+    const teamOptions = [
+      { key: "home", label: "Home" },
+      { key: "away", label: "Away" },
+    ];
+    // Structure: team -> margin -> outcome
+    const marginStructure: Record<string, Record<string, Outcome>> = {};
+    outcomes.forEach((outcome) => {
+      const name = outcome.displayName.toLowerCase();
+      let team = "";
+      let margin = "";
+      if (name.includes("home by 1")) {
+        team = "home";
+        margin = "1";
+      } else if (name.includes("home by 2")) {
+        team = "home";
+        margin = "2";
+      } else if (name.includes("home by 3+")) {
+        team = "home";
+        margin = "3+";
+      } else if (name.includes("away by 1")) {
+        team = "away";
+        margin = "1";
+      } else if (name.includes("away by 2")) {
+        team = "away";
+        margin = "2";
+      } else if (name.includes("away by 3+")) {
+        team = "away";
+        margin = "3+";
+      }
+      if (team) {
+        if (!marginStructure[team]) marginStructure[team] = {};
+        marginStructure[team][margin] = outcome;
+      }
+    });
+    return (
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: marketCardBg, borderColor: marketCardBorder },
+        ]}
       >
-        <View style={styles.headerRow}>
-          <Ionicons
-            name={
-              isCollapsed ? "chevron-forward-outline" : "chevron-down-outline"
-            }
-            size={18}
-            color="#222"
-          />
-          <Text style={styles.title}>{title}</Text>
-          <Ionicons
-            name="information-circle-outline"
-            size={16}
-            color="#888"
-            style={{ marginLeft: 4 }}
-          />
-        </View>
-      </TouchableOpacity>
-      {!isCollapsed && (
-        <ScrollView horizontal>
-          <View>
-            {/* X-axis headers */}
-            <View style={styles.gridRow}>
-              <View
-                style={[styles.axisCell, { backgroundColor: "transparent" }]}
-              />
-              <View style={[styles.gridBlock, { padding: 3 }]}>
-                {secondaryOptions.map((secondary) => (
-                  <View
-                    key={secondary}
-                    style={[
-                      styles.gridCell,
-                      {
-                        width: `${100 / secondaryOptions.length}%`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        paddingInline: 8,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.axisLabel}>
-                      {secondary.toUpperCase()}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            {/* Outcome rows */}
-            {primaryOptions.map((primary, index) => (
-              <View key={primary} style={styles.gridRow}>
-                <View style={styles.axisCell}>
-                  <Text style={styles.axisLabel}>{primary.toUpperCase()}</Text>
-                </View>
-                <View style={styles.gridBlock}>
-                  {secondaryOptions.map((secondary, idx) => {
-                    const outcome = structure[primary]?.[secondary];
-                    return (
-                      // <View
-                      //   style={[
-                      //     styles.gridCell,
-                      //     {
-                      //       width: `${100 / secondaryOptions.length}%`,
-                      //       display: "flex",
-                      //       alignItems: "center",
-                      //       justifyContent: "center",
-                      //       paddingInline: 8,
-                      //     },
-                      //   ]}
-                      //   key={secondary}
-                      // >
-                      <OddsButton
-                        outcome={outcome}
-                        game_id={Number(fixture_data?.gameID)}
-                        key={secondary}
-                        fixture_data={fixture_data}
-                        // show_display_name={true}
-                        height={48}
-                        disabled={disabled}
-                        rounded={
-                          index === 0
-                            ? idx === 0
-                              ? {
-                                  borderTopLeftRadius: 6,
-                                }
-                              : idx === secondaryOptions.length - 1
-                                ? { borderTopRightRadius: 6 }
-                                : {}
-                            : index === primaryOptions.length - 1
-                              ? idx === 0
-                                ? {
-                                    borderBottomLeftRadius: 6,
-                                  }
-                                : idx === secondaryOptions.length - 1
-                                  ? { borderBottomRightRadius: 6 }
-                                  : {}
-                              : {}
-                        }
-                      />
-                      // </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => setIsCollapsed((prev) => !prev)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.headerRow}>
+            <Ionicons
+              name={
+                isCollapsed ? "chevron-forward-outline" : "chevron-down-outline"
+              }
+              size={18}
+              color="#222"
+            />
+            <Text style={styles.title}>{title}</Text>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color="#888"
+              style={{ marginLeft: 4 }}
+            />
           </View>
-        </ScrollView>
-      )}
-    </View>
-  );
+        </TouchableOpacity>
+        {!isCollapsed && (
+          <ScrollView horizontal>
+            <View style={{ flex: 1, width: "100%" }}>
+              {/* X-axis headers */}
+              <View style={styles.gridRow}>
+                <View
+                  style={[styles.axisCell, { backgroundColor: "transparent" }]}
+                />
+                <View style={[styles.gridBlock, { padding: 3 }]}>
+                  {marginOptions.map((margin) => (
+                    <View
+                      key={margin}
+                      style={[
+                        styles.gridCell,
+                        {
+                          width: `${100 / marginOptions.length}%`,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          paddingHorizontal: 8,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.axisLabel}>{margin}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              {/* Outcome rows */}
+              {teamOptions.map((team, index) => (
+                <View key={team.key} style={styles.gridRow}>
+                  <View style={styles.axisCell}>
+                    <Text style={styles.axisLabel}>{team.label}</Text>
+                  </View>
+                  <View style={styles.gridBlock}>
+                    {marginOptions.map((margin, idx) => {
+                      const outcome = marginStructure[team.key]?.[margin];
+                      return (
+                        <View
+                          key={margin}
+                          style={{
+                            flex: 1,
+                            // width: `${100 / marginOptions.length}%`,
+                            width: 80,
+                          }}
+                        >
+                          <OddsButton
+                            outcome={outcome}
+                            game_id={Number(fixture_data?.gameID)}
+                            fixture_data={fixture_data}
+                            height={48}
+                            disabled={disabled}
+                            rounded={{
+                              borderTopLeftRadius:
+                                index === 0 && idx === 0 ? 6 : 0,
+                              borderTopRightRadius:
+                                index === 0 && idx === marginOptions.length - 1
+                                  ? 6
+                                  : 0,
+                              borderBottomLeftRadius:
+                                index === teamOptions.length - 1 && idx === 0
+                                  ? 6
+                                  : 0,
+                              borderBottomRightRadius:
+                                index === teamOptions.length - 1 &&
+                                idx === marginOptions.length - 1
+                                  ? 6
+                                  : 0,
+                            }}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
+  // ...existing code for other combination types...
 };
 
 export default CombinationCard;
 
 const styles = StyleSheet.create({
   card: {
-    shadowColor: "#000",
+    // shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderRadius: 10,
+    // borderRadius: 10,
     padding: 4,
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   headerBtn: {
     width: "100%",
@@ -229,7 +232,7 @@ const styles = StyleSheet.create({
   gridRow: {
     flexDirection: "row",
     alignItems: "center",
-    width: "130%",
+    width: "100%",
   },
   axisCell: {
     minWidth: 48,
@@ -264,10 +267,11 @@ const styles = StyleSheet.create({
   gridBlock: {
     display: "flex",
     flexDirection: "row",
-    minWidth: 120,
+    // minWidth: 120,
     // alignItems: "center",
     // justifyContent: "center",
     // // padding: 2,
-    width: "100%",
+    width: Platform.OS === "ios" ? "128%" : "118%",
+    // backgroundColor: "green",
   },
 });

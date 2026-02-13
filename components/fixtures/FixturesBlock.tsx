@@ -42,7 +42,7 @@ const SkeletonLoader = () => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulse.start();
     return () => pulse.stop();
@@ -238,8 +238,32 @@ const FixturesBlock = ({
       return name === "o/u" || name === "over/under";
     };
 
-    const oneX2 = _markets.find(is1x2);
-    const overUnderMarket = _markets.find(isOverUnder);
+    // Helper to sort Double Chance outcomes
+    const sortDoubleChanceOutcomes = (outcomes: Outcome[]) => {
+      const order = ["1X", "12", "X2"];
+      return [...outcomes].sort((a, b) => {
+        const aName = (a.displayName || "").toUpperCase();
+        const bName = (b.displayName || "").toUpperCase();
+        return order.indexOf(aName) - order.indexOf(bName);
+      });
+    };
+
+    // Map and sort Double Chance outcomes in all markets
+    const processedMarkets = _markets.map((market: any) => {
+      if (
+        market.marketName?.toLowerCase().includes("double chance") ||
+        market.marketID === "10"
+      ) {
+        return {
+          ...market,
+          outcomes: sortDoubleChanceOutcomes(market.outcomes),
+        };
+      }
+      return market;
+    });
+
+    const oneX2 = processedMarkets.find(is1x2);
+    const overUnderMarket = processedMarkets.find(isOverUnder);
 
     let oneOverUnder;
     if (overUnderMarket) {
@@ -253,10 +277,10 @@ const FixturesBlock = ({
       };
     }
 
-    if (!oneX2 || !oneOverUnder) return _markets;
+    if (!oneX2 || !oneOverUnder) return processedMarkets;
 
-    const rest = _markets.filter(
-      (m: any) => m !== oneX2 && m !== overUnderMarket
+    const rest = processedMarkets.filter(
+      (m: any) => m !== oneX2 && m !== overUnderMarket,
     );
 
     return [oneX2, oneOverUnder, ...rest];
@@ -341,7 +365,7 @@ const FixturesBlock = ({
     const sortedSpecifiersByMarket: Record<string, string[]> = {};
     Object.keys(specifiersByMarket).forEach((marketId) => {
       sortedSpecifiersByMarket[marketId] = Array.from(
-        specifiersByMarket[marketId] || []
+        specifiersByMarket[marketId] || [],
       ).sort((a, b) => {
         const getVal = (spec: string) => {
           const m = spec.match(/total=(\d+(?:\.\d+)?)/);
@@ -412,7 +436,7 @@ const FixturesBlock = ({
                   newSpecifiers[fixtureId][marketId] = defaultSpec;
                 }
               }
-            }
+            },
           );
         });
 
@@ -626,7 +650,7 @@ const FixturesBlock = ({
                 backgroundColor: "#181a20",
                 borderBottomWidth: 1,
                 borderBottomColor: "#232733",
-                height: 44,
+                height: 36,
               }}
               contentContainerStyle={{
                 flexDirection: "row",
@@ -659,8 +683,14 @@ const FixturesBlock = ({
                           ? "#fff"
                           : "#e0e0e0",
                       fontFamily: "PoppinsSemibold",
-                      fontSize: 14,
+                      fontSize: 12,
+                      // whiteSpace: "nowrap",
+                      flexShrink: 1,
+                      textAlign: "center",
+                      alignSelf: "center",
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {market.marketName.trim()}
                   </Text>
@@ -687,7 +717,7 @@ const FixturesBlock = ({
                 backgroundColor: "#181a20",
                 borderBottomWidth: 1,
                 borderBottomColor: "#232733",
-                height: 44,
+                height: 36,
               }}
             >
               {markets.map((market: any, idx: number) => (
@@ -715,8 +745,10 @@ const FixturesBlock = ({
                           ? "#fff"
                           : "#e0e0e0",
                       fontFamily: "PoppinsSemibold",
-                      fontSize: 14,
+                      fontSize: 12,
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {market.marketName.trim()}
                   </Text>
@@ -739,7 +771,7 @@ const FixturesBlock = ({
 
         {/* Fixtures List */}
         <ScrollView
-          style={{ display: "flex", gap: 4 }}
+          style={{ display: "flex", gap: 2 }}
           contentContainerStyle={{ paddingBottom: 32 }}
         >
           {Object.values(groupedFixtures).map((group: any, index: number) => (
@@ -751,7 +783,7 @@ const FixturesBlock = ({
                   flexWrap: "wrap",
                   borderBottomWidth: 1,
                   borderBottomColor: "#2A2A2A",
-                  marginBottom: 8,
+                  marginBottom: 4,
                   backgroundColor: "#060019",
                 }}
               >
@@ -767,7 +799,7 @@ const FixturesBlock = ({
                     style={{
                       color: "#fff",
                       fontFamily: "PoppinsSemibold",
-                      fontSize: 15,
+                      fontSize: 13,
                       marginVertical: 6,
                       marginBottom: 4,
                     }}
@@ -789,7 +821,7 @@ const FixturesBlock = ({
                       const outcomes = (fixture.outcomes || []).filter(
                         (o) =>
                           String(o.marketID) ===
-                          String(selectedMarket.market_id)
+                          String(selectedMarket.market_id),
                       );
                       return outcomes.length > 0;
                     });
@@ -798,7 +830,7 @@ const FixturesBlock = ({
 
                     const marketOutcomes = (firstFixture.outcomes || []).filter(
                       (o) =>
-                        String(o.marketID) === String(selectedMarket.market_id)
+                        String(o.marketID) === String(selectedMarket.market_id),
                     );
 
                     if (
@@ -820,7 +852,7 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "bold",
-                              fontSize: 14,
+                              fontSize: 12,
                               textAlign: "center",
                             }}
                           >
@@ -841,7 +873,7 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "bold",
-                              fontSize: 14,
+                              fontSize: 12,
                               textAlign: "center",
                             }}
                           >
@@ -862,7 +894,7 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "bold",
-                              fontSize: 14,
+                              fontSize: 12,
                               textAlign: "center",
                             }}
                           >
@@ -886,9 +918,11 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "bold",
-                              fontSize: 14,
+                              fontSize: 12,
                               textAlign: "center",
                             }}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
                           >
                             {(outcome?.displayName ?? "").trim()}
                           </Text>
@@ -909,8 +943,26 @@ const FixturesBlock = ({
                     outcomesByMarket[mId].push(outcome);
                   });
 
-                  const marketOutcomes =
+                  let marketOutcomes =
                     outcomesByMarket[String(selectedMarket.market_id)] || [];
+                  // Sort Double Chance outcomes as 1X, 12, X2 for rendering
+                  const selectedMarketObj = markets.find(
+                    (m) => m.marketID === selectedMarket.market_id,
+                  );
+                  if (
+                    selectedMarketObj &&
+                    (selectedMarketObj.marketName
+                      ?.toLowerCase()
+                      .includes("double chance") ||
+                      selectedMarketObj.marketID === "10")
+                  ) {
+                    const order = ["1X", "12", "X2"];
+                    marketOutcomes = [...marketOutcomes].sort((a, b) => {
+                      const aName = (a.displayName || "").toUpperCase();
+                      const bName = (b.displayName || "").toUpperCase();
+                      return order.indexOf(aName) - order.indexOf(bName);
+                    });
+                  }
 
                   return (
                     <View
@@ -918,7 +970,7 @@ const FixturesBlock = ({
                       style={{
                         borderBottomWidth: 1,
                         borderBottomColor: "#2A2A2A",
-                        paddingBlock: 4,
+                        paddingBlock: 2,
                       }}
                     >
                       {/* Fixture Info */}
@@ -926,7 +978,7 @@ const FixturesBlock = ({
                         style={{
                           display: "flex",
                           flexDirection: "row",
-                          gap: 4,
+                          gap: 2,
                         }}
                       >
                         {fixture.event_type === "live" ? (
@@ -934,8 +986,8 @@ const FixturesBlock = ({
                             eventTime={fixture.eventTime}
                             style={{
                               color: "#eee",
-                              fontSize: 13,
-                              marginBottom: 4,
+                              fontSize: 11.5,
+                              marginBottom: 2,
                               fontWeight: "600",
                             }}
                             isLive={fixture.event_type === "live"}
@@ -944,45 +996,45 @@ const FixturesBlock = ({
                           <Text
                             style={{
                               color: "#9ca0ab",
-                              fontSize: 13,
-                              marginBottom: 4,
+                              fontSize: 11.5,
+                              marginBottom: 2,
                               fontWeight: "600",
                             }}
                           >
-                            {AppHelper.formatDate(fixture.date)}
+                            {AppHelper.formatDate(fixture.eventTime)}
                           </Text>
                         )}
                         {fixture.event_type === "live" && (
                           <Text
                             style={{
                               color: "#eee",
-                              fontSize: 13,
-                              marginBottom: 4,
+                              fontSize: 11.5,
+                              marginBottom: 2,
                               fontWeight: "600",
                             }}
                           >
                             {fixture.matchStatus}
                           </Text>
                         )}
-                        <Text
+                        {/* <Text
                           style={{
                             color: "#9ca0ab",
-                            fontSize: 13,
-                            marginBottom: 4,
+                            fontSize: 11.5,
+                            marginBottom: 2,
                             fontWeight: "600",
                           }}
                         >
                           ID {fixture.gameID}
-                        </Text>
+                        </Text> */}
                         <Text
                           style={{
                             color: "#9ca0ab",
-                            fontSize: 13,
-                            marginBottom: 4,
+                            fontSize: 11.5,
+                            marginBottom: 2,
                             fontWeight: "600",
                           }}
                         >
-                          {fixture.tournament} - {fixture.categoryName}
+                          {fixture.categoryName}
                         </Text>
                       </View>
 
@@ -991,7 +1043,7 @@ const FixturesBlock = ({
                         style={{
                           display: "flex",
                           flexDirection: "row",
-                          gap: 8,
+                          gap: 6,
                           alignItems: "center",
                         }}
                       >
@@ -1012,7 +1064,7 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "500",
-                              fontSize: 15,
+                              fontSize: 12.5,
                             }}
                           >
                             {fixture.homeTeam}
@@ -1021,7 +1073,7 @@ const FixturesBlock = ({
                             style={{
                               color: "#fff",
                               fontWeight: "600",
-                              fontSize: 15,
+                              fontSize: 12.5,
                             }}
                           >
                             {fixture.awayTeam}
@@ -1041,7 +1093,7 @@ const FixturesBlock = ({
                               style={{
                                 color: "#fff",
                                 fontWeight: "500",
-                                fontSize: 15,
+                                fontSize: 12.5,
                               }}
                             >
                               {fixture.homeScore || "0"}
@@ -1050,7 +1102,7 @@ const FixturesBlock = ({
                               style={{
                                 color: "#fff",
                                 fontWeight: "600",
-                                fontSize: 15,
+                                fontSize: 12.5,
                               }}
                             >
                               {fixture.awayScore || "0"}
@@ -1084,26 +1136,26 @@ const FixturesBlock = ({
                                       <Text
                                         style={{
                                           fontWeight: "bold",
-                                          fontSize: 14,
+                                          fontSize: 12.5,
                                           color: "#222",
                                         }}
                                       >
                                         {String(
                                           getFixtureSpecifier(
                                             fixture.gameID,
-                                            selectedMarket.market_id
+                                            selectedMarket.market_id,
                                           )?.match(
-                                            /total=(\d+(?:\.\d+)?)/
+                                            /total=(\d+(?:\.\d+)?)/,
                                           )?.[1] ||
                                             getFixtureSpecifier(
                                               fixture.gameID,
-                                              selectedMarket.market_id
-                                            )
+                                              selectedMarket.market_id,
+                                            ),
                                         )}
                                       </Text>
                                       <Entypo
                                         name="chevron-down"
-                                        size={20}
+                                        size={18}
                                         color="black"
                                       />
                                     </View>
@@ -1123,7 +1175,7 @@ const FixturesBlock = ({
                                     {};
                                   const currentSpec = getFixtureSpecifier(
                                     fixture.gameID,
-                                    selectedMarket.market_id
+                                    selectedMarket.market_id,
                                   );
                                   const group = marketPairs[currentSpec] || {};
 
@@ -1198,7 +1250,7 @@ const FixturesBlock = ({
                         <Text
                           style={{
                             color: "#9ca0ab",
-                            fontSize: 13,
+                            fontSize: 11,
                             marginBottom: 4,
                             fontWeight: "600",
                           }}
@@ -1208,7 +1260,7 @@ const FixturesBlock = ({
                       </View>
                     </View>
                   );
-                }
+                },
               )}
             </View>
           ))}

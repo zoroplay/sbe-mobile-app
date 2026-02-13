@@ -39,7 +39,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       markets: ["1", "10", "18"],
       specifier: "",
     },
-    { skip: !ref }
+    { skip: !ref },
   );
   const DEFAULT_HEIGHT = SCREEN_HEIGHT * 0.9;
 
@@ -57,7 +57,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
   const detectMarketType = (
     marketName: string,
     specifier: string,
-    outcomes: any[]
+    outcomes: any[],
   ): string => {
     // console.log("Detecting market type for market:", marketName);
     const name = (marketName ?? "").toLowerCase().trim();
@@ -117,7 +117,8 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       name.includes("or over") ||
       name.includes("&") ||
       name.includes("+") ||
-      name.includes("gg/ng")
+      name.includes("gg/ng") ||
+      name.includes("winning margin")
     ) {
       return "COMBINATION";
     }
@@ -130,10 +131,10 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
         !name.includes("away")) ||
       spec.includes("total=") ||
       (outcomes.some((o) =>
-        (o.outcomeName ?? "")?.toLowerCase().includes("over")
+        (o.outcomeName ?? "")?.toLowerCase().includes("over"),
       ) &&
         outcomes.some((o) =>
-          (o.outcomeName ?? "")?.toLowerCase().includes("under")
+          (o.outcomeName ?? "")?.toLowerCase().includes("under"),
         ))
     ) {
       return "OVER_UNDER";
@@ -234,6 +235,17 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
           component: (
             <MainCard
               key={`${marketType}-${marketId}`}
+              {...componentProps}
+              market_id={marketId}
+            />
+          ),
+        };
+      } else if (marketName.toLowerCase().includes("winning margin")) {
+        return {
+          type: "WINNING_MARGIN",
+          component: (
+            <CombinationCard
+              key={`WINNING_MARGIN-${marketId}`}
               {...componentProps}
               market_id={marketId}
             />
@@ -356,7 +368,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
   // Create dynamic market sections - always render components, they handle their own loading states
   const dynamicMarketSections = useMemo(
     () => createDynamicMarketSections(),
-    [selectedGame, isFixtureLoading, marketSearch]
+    [selectedGame, isFixtureLoading, marketSearch],
   );
 
   // Only show dynamicMarketSections if we have outcomes, otherwise fallback to skeletons
@@ -443,16 +455,16 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       dismissible={true}
       height={DEFAULT_HEIGHT}
     >
-      <View style={{ paddingInline: 10 }}>
+      <View style={{ paddingInline: 8 }}>
         {/* Market search input */}
         {isFixtureLoading ? (
           <View
             style={{
               width: "70%",
-              height: 24,
+              height: 20,
               backgroundColor: "#e5e7eb",
               borderRadius: 4,
-              marginBottom: 8,
+              marginBottom: 4,
             }}
           />
         ) : is_live ? (
@@ -487,7 +499,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
                 style={{
                   flex: 1,
                   color: "#232c5d",
-                  fontSize: 14,
+                  fontSize: 13,
                   fontFamily: "PoppinsSemibold",
                 }}
               >
@@ -509,7 +521,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
                   style={{
                     color: "#fff",
                     fontFamily: "PoppinsSemibold",
-                    fontSize: 16,
+                    fontSize: 14,
                   }}
                 >
                   {selectedGame?.homeScore ?? 0}
@@ -528,7 +540,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
                   flex: 1,
                   color: "#232c5d",
                   fontFamily: "PoppinsSemibold",
-                  fontSize: 14,
+                  fontSize: 13,
                   padding: 2,
                 }}
               >
@@ -550,7 +562,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
                   style={{
                     color: "#fff",
                     fontFamily: "PoppinsSemibold",
-                    fontSize: 16,
+                    fontSize: 14,
                   }}
                 >
                   {selectedGame?.awayScore ?? 0}
@@ -567,17 +579,17 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
                 alignItems: "center",
               }}
             >
-              <Text style={{ fontFamily: "PoppinsSemibold", fontSize: 16 }}>
+              <Text style={{ fontFamily: "PoppinsSemibold", fontSize: 14 }}>
                 {selectedGame?.homeTeam ?? selectedGame?.competitor1} vs{" "}
                 {selectedGame?.awayTeam ?? selectedGame?.competitor2}
               </Text>
             </View>
-            <Text style={{ color: "#888", fontSize: 13, marginBottom: 4 }}>
+            <Text style={{ color: "#888", fontSize: 11.5, marginBottom: 2 }}>
               {selectedGame?.tournament} • {selectedGame?.categoryName}
             </Text>
           </>
         )}
-        <View style={{ marginTop: 4 }}>
+        <View style={{ marginTop: 2 }}>
           <Input
             placeholder="Search market name..."
             value={marketSearch}
@@ -587,48 +599,50 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
               borderColor: "#e5e7eb",
               borderRadius: 6,
               // paddingHorizontal: 10,
-              paddingVertical: 6,
-              fontSize: 14,
+              paddingVertical: 4,
+              fontSize: 13,
               backgroundColor: "#fff",
             }}
             placeholderTextColor="#888"
           />
         </View>
       </View>
-      {isFixtureLoading || !hasOutcomes ? (
-        <ScrollView>
-          {skeletonSections.map((section, index) => (
-            <Fragment key={`skeleton-section-${index}`}>
-              {section.component}
-            </Fragment>
-          ))}
-        </ScrollView>
-      ) : dynamicMarketSections.length === 0 ? (
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 32,
-          }}
-        >
-          <Text style={{ color: "#888", fontSize: 16, textAlign: "center" }}>
-            No markets found matching your search.
-          </Text>
-        </View>
-      ) : (
-        <ScrollView>
-          {dynamicMarketSections.map((section, index) => {
-            // Extract marketId from the component's key prop
-            const componentKey = section.component?.key || `market-${index}`;
-            return (
-              <Fragment key={`section-${componentKey}`}>
+      <View style={{ flex: 1, padding: 4 }}>
+        {isFixtureLoading || !hasOutcomes ? (
+          <ScrollView>
+            {skeletonSections.map((section, index) => (
+              <Fragment key={`skeleton-section-${index}`}>
                 {section.component}
               </Fragment>
-            );
-          })}
-        </ScrollView>
-      )}
+            ))}
+          </ScrollView>
+        ) : dynamicMarketSections.length === 0 ? (
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <Text style={{ color: "#888", fontSize: 16, textAlign: "center" }}>
+              No markets found matching your search.
+            </Text>
+          </View>
+        ) : (
+          <ScrollView>
+            {dynamicMarketSections.map((section, index) => {
+              // Extract marketId from the component's key prop
+              const componentKey = section.component?.key || `market-${index}`;
+              return (
+                <Fragment key={`section-${componentKey}`}>
+                  {section.component}
+                </Fragment>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
     </BottomModal>
   );
 };

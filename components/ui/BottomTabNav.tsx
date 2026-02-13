@@ -43,7 +43,7 @@ export default function BottomTabNav({
         {/* Tabs */}
         <View
           style={{
-            height: 50,
+            height: 40,
             width: "100%",
             backgroundColor: "rgb(6,0,25)",
             flexDirection: "row",
@@ -71,7 +71,7 @@ export default function BottomTabNav({
                   // fontWeight: selectedTab === idx ? "bold" : "600",
                   fontFamily: "PoppinsSemibold",
 
-                  fontSize: 15,
+                  fontSize: 13,
                 }}
               >
                 {item.name}

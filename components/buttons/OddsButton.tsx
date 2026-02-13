@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { Text } from "../Themed";
+import { useAppSelector } from "@/hooks/useAppDispatch";
 
 type Props = {
   outcome: Outcome;
@@ -27,7 +28,8 @@ const OddsButton = ({
   disabled,
   rounded = { borderRadius: 8 },
 }: Props) => {
-  const { checkBetSelected, toggleBet } = useBetting();
+  const { checkBetSelected, toggleBet, bonus_list } = useBetting();
+  const { global_variables } = useAppSelector((state) => state.app);
 
   const [is_disabled, setIsDisabled] = useState(!!disabled || !outcome);
 
@@ -42,8 +44,8 @@ const OddsButton = ({
         outcome_data: outcome,
         element_id: fixture_data?.matchID!,
         bet_type: "pre",
-        global_vars: {},
-        bonus_list: [],
+        global_vars: global_variables!,
+        bonus_list: bonus_list,
       });
     }
   };
@@ -124,8 +126,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     // width: "100%",
     minWidth: 40,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
     borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
   },
   odds: {
     fontFamily: "PoppinsSemibold",
-    fontSize: 14,
+    fontSize: 13,
     color: "#222",
   },
   lockIconWrap: {

@@ -22,7 +22,7 @@ import { Text } from "@/components/Themed";
 
 const live = () => {
   const { live_fixtures, markets } = useAppSelector(
-    (state) => state.live_games
+    (state) => state.live_games,
   );
   // const {
   //   subscribeToLiveOdds,
@@ -71,10 +71,10 @@ const live = () => {
         updateLiveFixture({
           matchID: matchId.toString(),
           matchStatus: "1", // Suspended
-        })
+        }),
       );
     },
-    [dispatch]
+    [dispatch],
   );
   // Reset selectedSport if it is no longer present in live_fixtures
   useEffect(() => {
@@ -99,7 +99,7 @@ const live = () => {
         homeScore: String(homeScore),
         awayScore: String(awayScore),
         matchStatus: String(matchStatus),
-      })
+      }),
     );
   };
   const handleLiveOddsChange = useCallback(
@@ -125,12 +125,12 @@ const live = () => {
                     : outcome.active || 0,
                 status: market.status || 0,
               },
-            })
+            }),
           );
         });
       });
     },
-    [dispatch]
+    [dispatch],
   );
 
   // useEffect(() => {
@@ -167,7 +167,7 @@ const live = () => {
             useNativeDriver: true,
             easing: Easing.inOut(Easing.ease),
           }),
-        ])
+        ]),
       );
       loop.start();
     }
@@ -183,7 +183,7 @@ const live = () => {
       acc[fixture.sportID].push(fixture);
       return acc;
     },
-    {} as Record<string, typeof live_fixtures>
+    {} as Record<string, typeof live_fixtures>,
   );
 
   // Determine which fixtures to show for the selected tab
@@ -196,9 +196,9 @@ const live = () => {
     shownFixtures.some((fixture) =>
       fixture.outcomes?.some?.(
         (outcome) =>
-          outcome.marketID?.toString() === market.marketID?.toString()
-      )
-    )
+          outcome.marketID?.toString() === market.marketID?.toString(),
+      ),
+    ),
   );
 
   return (
@@ -301,8 +301,10 @@ const live = () => {
                       color: "#ffffff",
                       fontWeight: "600",
                       letterSpacing: 0.6,
-                      fontSize: 16,
+                      fontSize: 12,
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {item.name}
                   </Text>

@@ -1,4 +1,10 @@
-import { StyleSheet, TouchableOpacity, View, Linking } from "react-native";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Linking,
+  Platform,
+} from "react-native";
 import React from "react";
 import { useAppSelector, useAppDispatch } from "@/hooks/useAppDispatch";
 import { logoutUser } from "@/store/features/slice/user.slice";
@@ -8,16 +14,26 @@ import { brandName } from "@/config/theme";
 import { Text } from "../Themed";
 import { MODAL_COMPONENTS } from "@/store/features/types";
 import { useModal } from "@/hooks/useModal";
+import AppImage from "../inputs/AppImage";
+import { useRouter } from "expo-router";
 
 const Footer = () => {
   const { is_authenticated } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
   const { openModal } = useModal();
+  const router = useRouter();
 
   const year = new Date().getFullYear();
   const openLink = (url: string) => Linking.openURL(url);
+  const navigateToCMS = (page: string) => router.push(`/cms?page=${page}`);
   return (
-    <View style={{ width: "100%", backgroundColor: "#2c3039" }}>
+    <View
+      style={{
+        width: "100%",
+        backgroundColor: "#2c3039",
+        paddingBottom: Platform.OS === "ios" ? 0 : 36,
+      }}
+    >
       <View
         style={{
           alignItems: "center",
@@ -54,8 +70,14 @@ const Footer = () => {
           }}
         >
           <View style={styles.logoRow}>
-            <Text style={styles.logoBet}>bet</Text>
-            <Text style={styles.logo24}>24</Text>
+            <AppImage
+              imageKey={"logo"}
+              style={{
+                height: 50,
+                width: 100,
+                resizeMode: "contain",
+              }}
+            />
           </View>
           <Text style={styles.paymentMethodsLabel}>Payment methods</Text>
           <View style={styles.paymentIconsRow}>
@@ -98,21 +120,36 @@ const Footer = () => {
 
         {/* Links */}
         <View style={styles.linkRow}>
-          <Text style={styles.linkText} onPress={() => openLink("#")}>
+          <Text
+            style={styles.linkText}
+            onPress={() => navigateToCMS("terms_and_conditions")}
+          >
             Terms & Conditions
           </Text>
-          <Text style={styles.linkText} onPress={() => openLink("#")}>
+          <Text
+            style={styles.linkText}
+            onPress={() => navigateToCMS("about_us")}
+          >
             About Us
           </Text>
-          <Text style={styles.linkText} onPress={() => openLink("#")}>
+          <Text
+            style={styles.linkText}
+            onPress={() => navigateToCMS("responsible_gaming")}
+          >
             Responsible Gaming
           </Text>
         </View>
         <View style={styles.linkRow}>
-          <Text style={styles.linkText} onPress={() => openLink("#")}>
+          <Text
+            style={styles.linkText}
+            onPress={() => navigateToCMS("privacy_policy")}
+          >
             Privacy Policy
           </Text>
-          <Text style={styles.linkText} onPress={() => openLink("#")}>
+          <Text
+            style={styles.linkText}
+            onPress={() => navigateToCMS("refund_policy")}
+          >
             Refund Policy
           </Text>
         </View>

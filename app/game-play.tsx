@@ -1,29 +1,19 @@
 import {
   ActivityIndicator,
   Dimensions,
-  FlatList,
-  Image,
-  Modal,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  useGameProviderListQuery,
-  useGameStartQuery,
-} from "@/store/services/gaming.service";
+import React, { useEffect, useState } from "react";
+import { useGameStartQuery } from "@/store/services/gaming.service";
 import environmentConfig from "@/store/services/configs/environment.config";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { WebView } from "react-native-webview";
-import { getFirebaseImage } from "@/assets/images";
-import { Game } from "@/store/services/types/responses";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { setCasinoGame } from "@/store/features/slice/fixtures.slice";
-import GameCard from "@/components/cards/GameCard";
 import { MODAL_COMPONENTS } from "@/store/features/types/modal.types";
 import { useModal } from "@/hooks/useModal";
 
@@ -34,7 +24,6 @@ const GamePlay = () => {
   const game_name = casino.game_name;
   const dispatch = useAppDispatch();
   const { openModal } = useModal();
-
 
   const { data, isLoading } = useGameStartQuery(
     {
@@ -52,21 +41,6 @@ const GamePlay = () => {
       skip: !game_id || !user,
     },
   );
-
- 
-
-  // const handleSelectGame = useCallback((game: any) => {
-  //   setShowRecommendedGames(false);
-
-  //   dispatch(
-  //     setCasinoGame({
-  //       game_name: game.title,
-  //       game_id: String(game.id),
-  //     }),
-  //   );
-  //   // Navigate to the game play screen, pass game info (adjust route name and params as needed)
-  //   router.push(`/game-play`);
-  // }, []);
 
   const HeaderCasinoPlay = () => (
     <View style={styles.header}>
@@ -86,9 +60,15 @@ const GamePlay = () => {
     </View>
   );
 
+  const gameUrl = data?.url || "";
+  const [showWebView, setShowWebView] = useState(true);
 
-
-  const gameUrl =  data?.url || "";
+  useEffect(() => {
+    // On unmount, hide the WebView to stop audio
+    return () => {
+      setShowWebView(false);
+    };
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
@@ -109,7 +89,7 @@ const GamePlay = () => {
               Unable to load the game at this time.{"\n"}
               Please try again later.
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.retryButton}
               onPress={() => router.push("/(casino)")}
             >
@@ -117,29 +97,31 @@ const GamePlay = () => {
             </TouchableOpacity>
           </View>
         ) : (
-          <WebView
-            source={{ uri: gameUrl }}
-            style={styles.webview}
-            startInLoadingState
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            renderLoading={() => (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#e41827" />
-                <Text style={{ color: "#fff", marginTop: 16 }}>
-                  Loading game...
-                </Text>
-              </View>
-            )}
-            onError={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent;
-              console.error("[WEBVIEW ERROR]", nativeEvent);
-            }}
-            onLoadStart={() => console.log("[WEBVIEW] Load started")}
-            onLoadEnd={() => console.log("[WEBVIEW] Load ended")}
-          />
+          showWebView && (
+            <WebView
+              source={{ uri: gameUrl }}
+              style={styles.webview}
+              startInLoadingState
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
+              renderLoading={() => (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#e41827" />
+                  <Text style={{ color: "#fff", marginTop: 16 }}>
+                    Loading game...
+                  </Text>
+                </View>
+              )}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error("[WEBVIEW ERROR]", nativeEvent);
+              }}
+              onLoadStart={() => console.log("[WEBVIEW] Load started")}
+              onLoadEnd={() => console.log("[WEBVIEW] Load ended")}
+            />
+          )
         )}
       </View>
     </SafeAreaView>

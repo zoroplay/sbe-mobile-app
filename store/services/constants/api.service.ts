@@ -13,7 +13,6 @@ import { getToken } from "../actions/getAccessToken";
 import environmentConfig from "../configs/environment.config";
 // import CryptoJS from "react-native-crypto-js";
 
-
 async function randomIVWordArray(bytes = 16) {
   const randomBytes = await ExpoCrypto.getRandomBytesAsync(bytes);
 
@@ -24,7 +23,9 @@ async function randomIVWordArray(bytes = 16) {
 }
 
 const generateApiKey = (): string => {
-  const key = CryptoJS.SHA256(`${environmentConfig.CLIENT_ID}:${environmentConfig.SITE_KEY}`).toString(CryptoJS.enc.Hex);
+  const key = CryptoJS.SHA256(
+    `${environmentConfig.CLIENT_ID}:${environmentConfig.SITE_KEY}`,
+  ).toString(CryptoJS.enc.Hex);
   return key; // 64 hex chars (32 bytes)
 };
 
@@ -55,7 +56,6 @@ const aesEncrypt = async (): Promise<string> => {
     throw new Error("Encryption failed");
   }
 };
-
 
 const TOKEN_REFRESH_LIMIT = {
   maxAttempts: 3,
@@ -121,7 +121,7 @@ const baseQuery = fetchBaseQuery({
     try {
       const token = await getToken();
 
-      headers.set("SBE-Client-ID", environmentConfig.CLIENT_ID);
+      headers.set("SBE-Client-ID", String(environmentConfig.CLIENT_ID));
 
       if (token && !["login", "forgotten"].includes(endpoint || "")) {
         headers.set("Authorization", `Bearer ${token}`);
@@ -162,8 +162,21 @@ const baseQueryWithLogging = async (args: any, api: any, extraOptions: any) => {
 const baseQueryWithReauthAndRateLimiting = async (
   args: any,
   api: BaseQueryApi,
-  extraOptions: any
+  extraOptions: any,
 ) => {
+  const fullUrl = typeof args === "string" ? args : args.url;
+
+  console.log(
+    "🚀 API Request:",
+    JSON.stringify({
+      fullUrl: `${fullUrl}`,
+      method: args.method || "GET",
+      body: args.body,
+      bodyType: typeof args.body,
+      headers: args.headers,
+      timestamp: new Date().toISOString(),
+    }),
+  );
   const result = await baseQueryWithLogging(args, api, extraOptions);
 
   if (result.error?.status === 500) {

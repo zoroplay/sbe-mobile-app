@@ -23,7 +23,10 @@ import SingleSearchInput from "@/components/inputs/SingleSearchInput";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { useQueryFixturesMutation } from "@/store/services/bets.service";
 import { setSearchQuery } from "@/store/features/slice/fixtures.slice";
-import { useGetGlobalVariablesQuery } from "@/store/services/app.service";
+import {
+  useGetBonusListQuery,
+  useGetGlobalVariablesQuery,
+} from "@/store/services/app.service";
 import { Text } from "@/components/Themed";
 
 export {
@@ -166,6 +169,7 @@ function RootLayoutNav() {
 
   const [queryFixtures, { isLoading }] = useQueryFixturesMutation();
   useGetGlobalVariablesQuery();
+  useGetBonusListQuery();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -213,6 +217,12 @@ function RootLayoutNav() {
               }}
             />
             <Stack.Screen
+              name="index"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
               name="ticket-details"
               options={{
                 title: "Ticket Details",
@@ -244,10 +254,10 @@ function RootLayoutNav() {
             />
           </Stack>
 
+          <Toast />
           <ModalProvider />
         </ThemeProvider>
       </SafeAreaProvider>
-      <Toast />
     </GestureHandlerRootView>
   );
 }

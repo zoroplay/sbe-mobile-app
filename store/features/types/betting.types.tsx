@@ -5,6 +5,7 @@ import type { LiveFixture } from "../slice/live-games.slice";
 import type { Outcome } from "../../../data/types/betting.types";
 import { BetSlip, FindBetData } from "@/store/services/data/betting.types";
 import { BET_TYPES_ENUM } from "@/data/enums/enum";
+import { GlobalVariables } from "./app.types";
 import { BetHistoryBet } from "@/store/services/data/queries.types";
 
 export interface BettingGame {
@@ -19,7 +20,12 @@ export interface BettingGame {
   more: string;
   is_live: boolean;
 }
-
+export interface BonusList {
+  bonus: string;
+  id: string;
+  min_odd: string;
+  ticket_length: number;
+}
 export interface SelectedBet {
   match_id: number;
 
@@ -98,13 +104,25 @@ export interface BettingState {
   display_duration: number; // How long to show change indicators (in ms)
   betslip: BetSlip | null;
   bet_type: BET_TYPES_ENUM;
-
   bet_data: BetHistoryBet | null;
+
+  bonus_list: BonusList[]; // Define a proper type based on the structure of your bonus list
 }
 
 export interface CouponData {
-  selections: any[];
-  combos: any[];
+  selections: SelectedBet[];
+  combos: {
+    grouping: number;
+    combinations: number;
+    stake_per_combination: number;
+    min_odds: number;
+    max_odds: number;
+    min_win: number;
+    max_win: number;
+    min_bonus: number;
+    max_bonus: number;
+    checked?: boolean;
+  }[];
   total_odds: number;
   max_bonus: number;
   min_bonus: number;
@@ -136,15 +154,15 @@ export interface AddBetPayload {
   outcome_data: Outcome;
   element_id: string;
   bet_type?: string;
-  global_vars?: any;
-  bonus_list?: any[];
+  global_vars?: GlobalVariables;
+  bonus_list?: BonusList[];
 }
 
 export interface RemoveBetPayload {
   event_id: number;
   display_name: string;
-  global_vars?: any;
-  bonus_list?: any[];
+  global_vars?: GlobalVariables;
+  bonus_list?: BonusList[];
 }
 export interface RemoveGamePayload {
   event_id: number;

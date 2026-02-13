@@ -17,9 +17,9 @@ const TournamentSkeleton = () => {
     <View
       style={{
         borderBottomWidth: 0.6,
-        paddingInline: 16,
+        paddingInline: 14,
         borderColor: "#333",
-        padding: 8,
+        padding: 6,
       }}
     >
       <SkeletonBox width="80%" height={14} />
@@ -38,7 +38,7 @@ const CategoryItem = ({ category, sportId }: CategoryItemProps) => {
         timeoffset: "0",
         total: category?.total.toString() || "0",
       },
-      { skip: !category?.categoryID || !isExpanded }
+      { skip: !category?.categoryID || !isExpanded },
     );
 
   const tournaments = Array.isArray(tournamentsData?.sports)
@@ -54,9 +54,9 @@ const CategoryItem = ({ category, sportId }: CategoryItemProps) => {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: 4,
+          padding: 6,
           paddingBottom: 8,
-          paddingBlock: 10,
+          paddingBlock: 8,
           paddingRight: 12,
           borderBottomWidth: 0.6,
           borderTopWidth: 0.6,
@@ -64,11 +64,11 @@ const CategoryItem = ({ category, sportId }: CategoryItemProps) => {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text style={{ color: "#fff", fontSize: 15, fontWeight: "500" }}>
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
             {category.categoryName}
           </Text>
           {category.total > 0 && (
-            <Text style={{ color: "#888", fontSize: 13 }}>
+            <Text style={{ color: "#888", fontSize: 11 }}>
               ({category.total})
             </Text>
           )}

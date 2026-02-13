@@ -47,7 +47,7 @@ export default function LandingPage() {
       router.push(`/search`);
     }
   }, [isSuccess]);
-  
+
   useEffect(() => {
     dispatch(setSearchQuery(""));
   }, []);
@@ -57,7 +57,7 @@ export default function LandingPage() {
     if (sportsData && sportsData.length > 0) {
       const defaultSportId = sport_id || sportsData[0].sportID;
       const defaultSportName = sport_name || sportsData[0].sportName;
-      
+
       setSelectedSport({
         sport_id: defaultSportId,
         sport_name: defaultSportName,
@@ -65,9 +65,9 @@ export default function LandingPage() {
 
       // Find the index of the selected sport and scroll to it
       const selectedIndex = sportsData.findIndex(
-        (sport) => sport.sportID === defaultSportId
+        (sport) => sport.sportID === defaultSportId,
       );
-      
+
       if (selectedIndex !== -1 && flatListRef.current) {
         // Delay scroll to ensure FlatList is fully rendered
         setTimeout(() => {
@@ -79,7 +79,7 @@ export default function LandingPage() {
         }, 100);
       }
     }
-  }, [sportsData,sport_id, sport_name]);
+  }, [sportsData, sport_id, sport_name]);
   const sportsNav = (sportsData || []).map((sport) => ({
     sport_id: sport.sportID,
     name: sport.sportName,
@@ -137,14 +137,14 @@ export default function LandingPage() {
                 {categoryIconMap({
                   name: item.name,
                   color: isSelected ? "#fff" : "#B9B9BA",
-                  font_size: 24,
+                  font_size: 20,
                 })}
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   style={{
                     color: isSelected ? "#fff" : "#B9B9BA",
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: "600",
                     fontFamily: "PoppinsSemibold",
                   }}
@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
     borderColor: "#2a2a2a",
     borderWidth: 1,
     borderRadius: 4,
-    height: 60,
-    width: 80,
+    height: 54,
+    width: 70,
     marginInline: 2,
     padding: 2,
     paddingBlock: 8,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "column",
     backgroundColor: "rgb(6,0,25)",
-    gap: 4,
+    gap: 2,
   },
   selected_top_bar_item: {
     borderColor: "#fff",
@@ -207,9 +207,8 @@ const styles = StyleSheet.create({
   },
   searchBox: {
     // margin: 8,
-    padding: 2,
-    paddingBlock: 16,
-    paddingBottom: 12,
+    padding: 1,
+    paddingBlock: 6,
     borderRadius: 6,
   },
 });

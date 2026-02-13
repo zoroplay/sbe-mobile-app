@@ -18,25 +18,32 @@ export type LocalImageKey = keyof typeof localImages;
 export type ImageKey = LocalImageKey;
 
 type ExtractRouteParams<T extends string> =
-  T extends `${string}:${infer Param}/${infer Rest}`
-    ? ExtractParamName<Param> | ExtractRouteParams<`/${Rest}`>
-    : T extends `${string}:${infer Param}&${infer Rest}`
-      ? ExtractParamName<Param> | ExtractRouteParams<`&${Rest}`>
-      : T extends `${string}:${infer Param}?${infer Rest}`
-        ? ExtractParamName<Param> | ExtractRouteParams<`?${Rest}`>
-      : T extends `${string}:${infer Param}`
-        ? ExtractParamName<Param>
+  T extends `${infer _Start}:${infer Param}?${string}` // If param before ?
+    ? Param extends `${infer Name}/${infer Rest}`
+      ? Name | ExtractRouteParams<`/${Rest}?`>
+      : Param extends `${infer Name}&${string}`
+        ? Name
+        : Param extends `${infer Name}`
+          ? Name
+          : never
+    : T extends `${infer _Start}:${infer Param}/${infer Rest}`
+      ? Param extends `${infer Name}&${string}`
+        ? Name | ExtractRouteParams<`/${Rest}`>
+        : Param | ExtractRouteParams<`/${Rest}`>
+      : T extends `${infer _Start}:${infer Param}`
+        ? Param extends `${infer Name}&${string}`
+          ? Name
+          : Param
         : never;
 
 // Helper type to extract just the parameter name, stopping at special chars
-type ExtractParamName<T extends string> = 
-  T extends `${infer Name}?${string}` 
+type ExtractParamName<T extends string> = T extends `${infer Name}?${string}`
+  ? Name
+  : T extends `${infer Name}&${string}`
     ? Name
-    : T extends `${infer Name}&${string}`
+    : T extends `${infer Name}/${string}`
       ? Name
-      : T extends `${infer Name}/${string}`
-        ? Name
-        : T;
+      : T;
 
 type RouteParams<T extends string> = {
   [K in ExtractRouteParams<T>]: string | number | (string | number)[];
@@ -239,7 +246,7 @@ export class AppHelper {
     if (color.includes("-")) {
       // Extract color from Tailwind class (e.g., "bg-blue-500" -> "blue-500")
       const colorMatch = color.match(
-        /(?:bg-|text-|border-)?([a-z]+-?\d+|black|white)/
+        /(?:bg-|text-|border-)?([a-z]+-?\d+|black|white)/,
       );
       if (colorMatch) {
         const tailwindColor = colorMatch[1];
@@ -308,7 +315,7 @@ export class AppHelper {
    */
   static isWithinMinutes = (
     dateString: string,
-    minutes: number = 5
+    minutes: number = 5,
   ): boolean => {
     try {
       const now = new Date();
@@ -361,24 +368,24 @@ export class AppHelper {
 
   static buildQueryUrl<T extends string>(
     template: T,
-    params: Omit<RouteParams<T>, "timeoffset" | "client_id" | "clientId">
+    params: Omit<RouteParams<T>, "timeoffset" | "client_id" | "clientId">,
   ): string {
     let result: string = template;
 
     // First, replace any :timeoffset placeholder with the global timeoffset
     result = result.replace(
       new RegExp(":timeoffset", "g"),
-      AppHelper._globalTimeOffset
+      AppHelper._globalTimeOffset,
     );
 
     // Replace :client_id with environment variable
     result = result.replace(
       new RegExp(":client_id", "g"),
-      String(environmentConfig.CLIENT_ID ?? "")
+      String(environmentConfig.CLIENT_ID ?? ""),
     );
     result = result.replace(
       new RegExp(":clientId", "g"),
-      String(environmentConfig.CLIENT_ID ?? "")
+      String(environmentConfig.CLIENT_ID ?? ""),
     );
 
     // Then replace all other parameters
@@ -450,7 +457,7 @@ export class AppHelper {
    */
   static incrementTime = (
     timeStr: string,
-    incrementSeconds: number = 1
+    incrementSeconds: number = 1,
   ): string => {
     const components = AppHelper.parseTimeString(timeStr);
     if (!components) return timeStr;
@@ -478,7 +485,7 @@ export class AppHelper {
    */
   static getNextLiveTime = (
     currentTime: string,
-    sportType?: string
+    sportType?: string,
   ): string => {
     // For most sports, increment by 1 second
     // For some sports like basketball, might increment by different amounts
@@ -539,7 +546,7 @@ export class AppHelper {
    */
   static createLiveTimeString = (
     timeStr: string,
-    isLive: boolean = true
+    isLive: boolean = true,
   ): string => {
     const cleanTime = AppHelper.extractCleanTime(timeStr);
 
@@ -601,7 +608,7 @@ export class AppHelper {
     if (!fixture?.outcomes) return false;
 
     return fixture.outcomes.some((outcome: any) =>
-      AppHelper.isOutcomeSuspended(outcome)
+      AppHelper.isOutcomeSuspended(outcome),
     );
   };
 
@@ -1104,7 +1111,7 @@ export class AppHelper {
    * Parse clock element and extract time information
    */
   static parseClockElement = (
-    clock: any
+    clock: any,
   ): {
     matchTime: string;
     stoppageTime?: number;
@@ -1311,7 +1318,7 @@ export class AppHelper {
               <span class="label">${row.label}</span>
               <span class="value">${row.value}</span>
             </div>
-          `
+          `,
             )
             .join("")}
           
@@ -1387,7 +1394,7 @@ export class AppHelper {
             }</div>
             <div class="odds">Odds: ${sel.odds}</div>
           </div>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -1538,7 +1545,7 @@ export class AppHelper {
         const printWindow = window.open(
           "",
           "PrintTicket",
-          "width=300,height=500"
+          "width=300,height=500",
         );
 
         if (printWindow) {
@@ -1554,7 +1561,7 @@ export class AppHelper {
           };
         } else {
           console.error(
-            "Failed to open print window. Please check browser popup settings."
+            "Failed to open print window. Please check browser popup settings.",
           );
         }
       }

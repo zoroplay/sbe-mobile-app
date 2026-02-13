@@ -193,6 +193,12 @@ export default function ProfilePage() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
+              if (!is_authenticated) {
+                openModal({
+                  modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+                });
+                return;
+              }
               router.push("/transactions");
             }}
             style={{ flex: 1, alignItems: "center" }}
@@ -212,7 +218,18 @@ export default function ProfilePage() {
               Transactions
             </Text>
           </TouchableOpacity>
-          <View style={{ flex: 1, alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!is_authenticated) {
+                openModal({
+                  modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+                });
+                return;
+              }
+              router.push("/bonus");
+            }}
+            style={{ flex: 1, alignItems: "center" }}
+          >
             <Ionicons
               name="gift-outline"
               size={28}
@@ -227,7 +244,7 @@ export default function ProfilePage() {
             >
               Bonus
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Pending Withdrawals */}

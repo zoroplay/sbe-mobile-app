@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+} from "react-native";
 import OddsButton from "@/components/buttons/OddsButton";
 import { PreMatchFixture } from "@/store/features/types/fixtures.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,7 +36,7 @@ const OverUnder = ({
 
   const outcomes =
     fixture_data?.outcomes?.filter(
-      (outcome) => (outcome.marketID || outcome.marketId) === market_id
+      (outcome) => (outcome.marketID || outcome.marketId) === market_id,
     ) || [];
 
   // Parse outcomes into pairs by specifier
@@ -45,12 +51,18 @@ const OverUnder = ({
     else if (name.includes("under")) pairsBySpecifier[spec].under = outcome;
   });
 
+  const market_name = outcomes
+    .find((item) => !!item.marketName)
+    ?.marketName.toLowerCase();
+
   let title =
     customTitle ||
-    outcomes.find((item) => !!item.marketName)?.marketName ||
-    "Over/Under";
+    ((market_name && market_name === "o/u") || market_name === "over/under"
+      ? "Over/Under"
+      : "") ||
+    "";
   if (is_loading) return <SkeletonCard />;
-  if (outcomes.length === 0) return null;
+  if (!outcomes || outcomes.length === 0 || !title) return null;
 
   // Sort specifiers by total value
   const specifiers = Object.keys(pairsBySpecifier).sort((a, b) => {
@@ -99,7 +111,16 @@ const OverUnder = ({
       </TouchableOpacity>
       {!isCollapsed && (
         <ScrollView horizontal>
-          <View>
+          <View
+            style={
+              {
+                // display: "flex",
+                // width: "100%",
+                // justifyContent: "center",
+                // alignItems: "center",
+              }
+            }
+          >
             {/* Column Headers */}
             <View
               style={[
@@ -146,61 +167,65 @@ const OverUnder = ({
                 </View>
               </View>
             </View>
-            {/* Outcome rows */}
-            {displayItems.map((spec, index) => {
-              const group = hasRealOutcomes ? pairsBySpecifier[spec] || {} : {};
-              const value = spec.match(/total=(\d+(?:\.\d+)?)/)?.[1] || spec;
+            <View>
+              {/* Outcome rows */}
+              {displayItems.map((spec, index) => {
+                const group = hasRealOutcomes
+                  ? pairsBySpecifier[spec] || {}
+                  : {};
+                const value = spec.match(/total=(\d+(?:\.\d+)?)/)?.[1] || spec;
 
-              return (
-                <View key={spec} style={styles.gridRow}>
-                  <View style={styles.axisCell}>
-                    <Text style={styles.axisLabel}>{value}</Text>
-                  </View>
-                  <View style={styles.gridBlock}>
-                    <View style={styles.gridCell}>
-                      <OddsButton
-                        outcome={group?.over!}
-                        game_id={Number(fixture_data?.gameID) as number}
-                        fixture_data={fixture_data}
-                        height={48}
-                        disabled={!group?.over || !hasRealOutcomes}
-                        rounded={
-                          index === 0
-                            ? {
-                                borderTopLeftRadius: 6,
-                              }
-                            : index === displayItems.length - 1
-                              ? {
-                                  borderBottomLeftRadius: 6,
-                                }
-                              : {}
-                        }
-                      />
+                return (
+                  <View key={spec} style={styles.gridRow}>
+                    <View style={styles.axisCell}>
+                      <Text style={styles.axisLabel}>{value}</Text>
                     </View>
-                    <View style={styles.gridCell}>
-                      <OddsButton
-                        outcome={group?.under!}
-                        game_id={Number(fixture_data?.gameID) as number}
-                        fixture_data={fixture_data}
-                        height={48}
-                        disabled={!group?.under || !hasRealOutcomes}
-                        rounded={
-                          index === 0
-                            ? {
-                                borderTopRightRadius: 6,
-                              }
-                            : index === displayItems.length - 1
+                    <View style={styles.gridBlock}>
+                      <View style={styles.gridCell}>
+                        <OddsButton
+                          outcome={group?.over!}
+                          game_id={Number(fixture_data?.gameID) as number}
+                          fixture_data={fixture_data}
+                          height={48}
+                          disabled={!group?.over || !hasRealOutcomes}
+                          rounded={
+                            index === 0
                               ? {
-                                  borderBottomRightRadius: 6,
+                                  borderTopLeftRadius: 6,
                                 }
-                              : {}
-                        }
-                      />
+                              : index === displayItems.length - 1
+                                ? {
+                                    borderBottomLeftRadius: 6,
+                                  }
+                                : {}
+                          }
+                        />
+                      </View>
+                      <View style={styles.gridCell}>
+                        <OddsButton
+                          outcome={group?.under!}
+                          game_id={Number(fixture_data?.gameID) as number}
+                          fixture_data={fixture_data}
+                          height={48}
+                          disabled={!group?.under || !hasRealOutcomes}
+                          rounded={
+                            index === 0
+                              ? {
+                                  borderTopRightRadius: 6,
+                                }
+                              : index === displayItems.length - 1
+                                ? {
+                                    borderBottomRightRadius: 6,
+                                  }
+                                : {}
+                          }
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
           </View>
         </ScrollView>
       )}
@@ -222,6 +247,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: "#fff",
     borderColor: "#e5e7eb",
+    width: "100%",
   },
   headerBtn: {
     width: "100%",
@@ -276,6 +302,6 @@ const styles = StyleSheet.create({
     // justifyContent: "center",
     // padding: 2,
     // backgroundColor: "red",
-    width: "79%",
+    width: Platform.OS === "ios" ? "79%" : "73%",
   },
 });

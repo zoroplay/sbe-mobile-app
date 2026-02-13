@@ -105,14 +105,14 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
       // For combo bets, validate stake per combination
       if (coupon_data?.combos && coupon_data.combos.length > 0) {
         const checkedCombos = coupon_data.combos.filter(
-          (combo: any) => combo.checked
+          (combo: any) => combo.checked,
         );
 
         if (checkedCombos.length > 0) {
           // Check if any combo has stake below minimum
           const totalCombinations = checkedCombos.reduce(
             (sum: number, combo: any) => sum + (combo.combinations || 0),
-            0
+            0,
           );
 
           if (totalCombinations > 0) {
@@ -123,9 +123,9 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
                 type: TOAST_TYPE_ENUM.ERROR,
                 title: "Minimum Stake Not Met",
                 description: `Minimum stake per combination for ${betTypeLabel} is ${currency} ${minStakeRequired.toFixed(
-                  2
+                  2,
                 )}. Your stake per combination is ${currency} ${stakePerCombination.toFixed(
-                  2
+                  2,
                 )}. Total minimum stake required: ${currency} ${(
                   minStakeRequired * totalCombinations
                 ).toFixed(2)}`,
@@ -147,7 +147,7 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
         type: TOAST_TYPE_ENUM.ERROR,
         title: "Minimum Stake Not Met",
         description: `Minimum stake for ${betTypeLabel} is ${currency} ${minStakeRequired.toFixed(
-          2
+          2,
         )}. Please increase your stake amount.`,
       });
       return false;
@@ -188,7 +188,13 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
           modal_name: MODAL_COMPONENTS.SUCCESS_MODAL,
           title: "Bet Booked Successfully",
           props: {
-            potential_winnings,
+            potential_winnings:
+              global_variables?.max_payout &&
+              Number(global_variables?.max_payout) +
+                Number(coupon_data.max_bonus) <
+                Number(potential_winnings)
+                ? global_variables?.max_payout
+                : potential_winnings + Number(coupon_data.max_bonus),
             stake,
             betslip_id:
               (result as any)?.data?.betslipId ||
@@ -271,14 +277,32 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
           },
         ],
       })),
-      grossWin: potential_winnings,
+      grossWin: Number(
+        global_variables?.max_payout &&
+          Number(global_variables?.max_payout) + Number(coupon_data.max_bonus) <
+            Number(potential_winnings)
+          ? global_variables?.max_payout
+          : potential_winnings + Number(coupon_data.max_bonus),
+      ),
       isBooking: 0,
       maxBonus: 0,
       maxOdds: total_odds,
-      maxWin: String(potential_winnings),
+      maxWin: String(
+        global_variables?.max_payout &&
+          Number(global_variables?.max_payout) + Number(coupon_data.max_bonus) <
+            Number(potential_winnings)
+          ? global_variables?.max_payout
+          : potential_winnings + Number(coupon_data.max_bonus),
+      ),
       minBonus: 0,
       minOdds: total_odds,
-      minWin: potential_winnings,
+      minWin: Number(
+        global_variables?.max_payout &&
+          Number(global_variables?.max_payout) + Number(coupon_data.max_bonus) <
+            Number(potential_winnings)
+          ? global_variables?.max_payout
+          : potential_winnings + Number(coupon_data.max_bonus),
+      ),
       selections: selected_bets.map((bet) => ({
         matchId: Number(bet.game?.matchID ?? bet.game?.match_id) || 0,
         eventId: Number(bet.game.event_id) || 0,
@@ -364,7 +388,14 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
               time: AppHelper.formatReceiptTimestamp(),
               stake: stake.toFixed(2),
               totalOdds: total_odds.toFixed(2),
-              possibleWin: potential_winnings.toFixed(2),
+              possibleWin: Number(
+                global_variables?.max_payout &&
+                  Number(global_variables?.max_payout) +
+                    Number(coupon_data.max_bonus) <
+                    Number(potential_winnings)
+                  ? global_variables?.max_payout
+                  : potential_winnings + Number(coupon_data.max_bonus),
+              ).toFixed(2),
               currency: user?.currency || "",
               selections: selected_bets.map((bet) => ({
                 eventName: bet.game.event_name || "",

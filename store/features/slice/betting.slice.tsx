@@ -11,6 +11,8 @@ import type {
   ToggleActiveSelectionPayload,
   UpdateComboStakePayload,
   UpdateBetTypePayload,
+  CouponData,
+  BonusList,
 } from "../types/betting.types";
 import type {
   BetSlip,
@@ -20,32 +22,34 @@ import type {
 import { BET_TYPES_ENUM } from "@/data/enums/enum";
 import { AppHelper } from "@/utils/helper";
 import { BetHistoryBet } from "@/store/services/data/queries.types";
+import { GlobalVariables } from "../types/app.types";
 
-const calculateTotalOdds = (bets: any[]): number => {
+const calculateTotalOdds = (bets: SelectedBet[]): number => {
   if (bets.length === 0) return 1;
   return bets.reduce(
-    (total, bet) => total * AppHelper.safeNumber(bet.odds_value),
-    1
+    (total, bet) => total * AppHelper.safeNumber(bet.game.odds),
+    1,
   );
 };
 
 const calculatePotentialWinnings = (
   total_odds: number,
-  stake: number
+  stake: number,
 ): number => {
   return AppHelper.safeNumber(total_odds) * AppHelper.safeNumber(stake);
 };
 
 const calculateWinnings = (
-  coupon_data: any,
-  global_vars: any,
-  bonus_list: any[]
+  coupon_data: CouponData,
+  global_vars: GlobalVariables,
+  bonus_list: BonusList[],
 ) => {
   const stake = coupon_data.stake || 0;
   const total_odds = parseFloat(coupon_data.total_odds.toString());
   const gross_win = total_odds * stake;
   const bonus = calculateBonus(coupon_data, global_vars, bonus_list);
-  const wth_tax = ((gross_win - stake) * (global_vars.wth_perc || 5)) / 100;
+  const wth_tax =
+    ((gross_win - stake) * (Number(global_vars?.wth_tax) || 5)) / 100;
   const max_win = gross_win - wth_tax;
 
   return {
@@ -57,38 +61,44 @@ const calculateWinnings = (
 };
 
 const calculateBonus = (
-  coupon_data: any,
-  global_vars: any,
-  bonus_list: any[]
+  coupon_data: CouponData,
+  global_vars: GlobalVariables,
+  bonus_list: BonusList[],
 ) => {
   if (!bonus_list || bonus_list.length === 0) return 0;
 
   const valid_events = coupon_data.selections.filter(
-    (sel: any) => parseFloat(sel.odds) >= (global_vars.min_bonus_odd || 1.5)
+    (sel) =>
+      parseFloat(sel.game.odds) >= (Number(global_vars.min_bonus_odd) || 1.5),
   ).length;
 
-  const bonus = bonus_list.find((b: any) => b.ticket_length === valid_events);
+  const bonus = bonus_list.find((b) => b.ticket_length === valid_events);
   if (!bonus) return 0;
 
   const gross_win =
     parseFloat(coupon_data.total_odds.toString()) * (coupon_data.stake || 0);
-  return (gross_win * bonus.bonus) / 100;
+  return (gross_win * Number(bonus.bonus)) / 100;
 };
 
-const groupTournament = (selections: any[]) => {
-  const tournaments: any = {};
-  selections.forEach((sel: any) => {
-    if (!tournaments[sel.tournament]) {
-      tournaments[sel.tournament] = [];
+const groupTournament = (
+  selections: SelectedBet[],
+): Record<string, SelectedBet[]> => {
+  const tournaments: Record<string, SelectedBet[]> = {};
+  selections.forEach((sel) => {
+    const tournament = sel.game.tournament;
+    if (!tournaments[tournament]) {
+      tournaments[tournament] = [];
     }
-    tournaments[sel.tournament].push(sel);
+    tournaments[tournament].push(sel);
   });
   return tournaments;
 };
 
-const groupSelections = (selections: any[]) => {
-  const fixtures: any = {};
-  selections.forEach((sel: any) => {
+const groupSelections = (
+  selections: SelectedBet[],
+): Record<number, SelectedBet[]> => {
+  const fixtures: Record<number, SelectedBet[]> = {};
+  selections.forEach((sel) => {
     if (!fixtures[sel.match_id]) {
       fixtures[sel.match_id] = [];
     }
@@ -97,13 +107,13 @@ const groupSelections = (selections: any[]) => {
   return fixtures;
 };
 
-const getSplitProps = (coupon_data: any) => {
+const getSplitProps = (coupon_data: CouponData) => {
   const selections = coupon_data.selections;
   const min_odds = Math.min(
-    ...selections.map((sel: any) => parseFloat(sel.odds))
+    ...selections.map((sel) => parseFloat(sel.game.odds)),
   );
   const max_odds = Math.max(
-    ...selections.map((sel: any) => parseFloat(sel.odds))
+    ...selections.map((sel) => parseFloat(sel.game.odds)),
   );
   const stake = coupon_data.stake || 0;
   const no_of_combos = selections.length;
@@ -122,10 +132,10 @@ const getSplitProps = (coupon_data: any) => {
   };
 };
 
-const calcCombinations = (coupon_data: any) => {
+const calcCombinations = (coupon_data: CouponData) => {
   const selections = coupon_data.selections;
   const max_combinations = Math.min(1000, 1000); // Set reasonable limits
-  const groups: any[] = [];
+  const groups = [];
 
   // Calculate combinations for different groupings
   for (let k = 1; k <= selections.length; k++) {
@@ -160,9 +170,9 @@ const calculateCombinationCount = (n: number, k: number): number => {
 };
 
 const updateComboWinningsFromTotal = (
-  coupon_data: any,
-  global_vars: any,
-  bonus_list: any[]
+  coupon_data: CouponData,
+  global_vars: GlobalVariables,
+  bonus_list: BonusList[],
 ) => {
   // Update combo winnings based on total stake and groupings
   const groupings = coupon_data.groupings || [];
@@ -170,7 +180,7 @@ const updateComboWinningsFromTotal = (
   let min_win = 0;
   let max_win = 0;
 
-  groupings.forEach((group: any) => {
+  groupings.forEach((group) => {
     if (group.combinations > 0) {
       total_combinations += group.combinations;
       const stake_per_combo = (coupon_data.stake || 0) / total_combinations;
@@ -178,11 +188,11 @@ const updateComboWinningsFromTotal = (
       // Calculate min/max winnings for this grouping
       const group_min_odds = calculateMinOddsForGrouping(
         coupon_data.selections,
-        group.grouping
+        group.grouping,
       );
       const group_max_odds = calculateMaxOddsForGrouping(
         coupon_data.selections,
-        group.grouping
+        group.grouping,
       );
 
       const group_min_win = group_min_odds * stake_per_combo;
@@ -203,24 +213,24 @@ const updateComboWinningsFromTotal = (
 };
 
 const calculateMinOddsForGrouping = (
-  selections: any[],
-  grouping: number
+  selections: SelectedBet[],
+  grouping: number,
 ): number => {
   // Calculate minimum odds for a specific grouping
   const sorted_odds = selections
-    .map((sel: any) => parseFloat(sel.odds))
+    .map((sel: SelectedBet) => parseFloat(sel.game.odds))
     .sort((a, b) => a - b);
   const min_odds_selection = sorted_odds.slice(0, grouping);
   return min_odds_selection.reduce((total, odds) => total * odds, 1);
 };
 
 const calculateMaxOddsForGrouping = (
-  selections: any[],
-  grouping: number
+  selections: SelectedBet[],
+  grouping: number,
 ): number => {
   // Calculate maximum odds for a specific grouping
   const sorted_odds = selections
-    .map((sel: any) => parseFloat(sel.odds))
+    .map((sel) => parseFloat(sel.game.odds))
     .sort((a, b) => b - a);
   const max_odds_selection = sorted_odds.slice(0, grouping);
   return max_odds_selection.reduce((total, odds) => total * odds, 1);
@@ -230,57 +240,105 @@ const BettingSlice = createSlice({
   name: "betting",
   initialState: initialBettingState,
   reducers: {
-    addBet: (state: BettingState, action: PayloadAction<AddBetPayload>) => {
-      const {
-        fixture_data,
-        outcome_data,
-        element_id,
-        bet_type = "pre",
-        global_vars = {},
-        bonus_list = [],
-      } = action.payload;
-      // console.log("fixture_data ======", fixture_data);
-      console.log("outcome_data ++++++++++", outcome_data);
-
-      const odds = outcome_data?.odds ?? "-";
+    addBet: (
+      state: BettingState,
+      { payload }: PayloadAction<AddBetPayload>,
+    ) => {
+      const odds = payload.outcome_data?.odds ?? "-";
 
       if (String(odds) === "-" || odds === null || odds === 0) {
         return; // Invalid odds, don't add
       }
       // Create selection data (similar to frapapa-shop)
-      const selection_data = {
-        match_id: parseInt(fixture_data.matchID?.toString() || "0"),
-        event_id: parseInt(fixture_data.gameID?.toString() || "0"),
-        game_id: fixture_data.gameID
-          ? parseInt(fixture_data.gameID?.toString() || "0")
-          : parseInt(fixture_data.gameID?.toString() || "0"),
-        event_name: fixture_data.name,
-        market_id: outcome_data.marketID ?? outcome_data.marketId,
-        market_name: outcome_data.marketName,
-        specifier: outcome_data.specifier,
-        outcome_name: outcome_data.outcomeName,
-        display_name: outcome_data.displayName,
-        outcome_id: outcome_data.outcomeID,
-        odds: parseFloat(outcome_data.odds.toString()).toFixed(2),
-        event_date: fixture_data.date,
-        tournament: fixture_data.tournament,
-        category: fixture_data.categoryName,
-        sport: fixture_data.sportName,
-        sport_id: fixture_data.sportID,
-        type: fixture_data.event_type,
-        event_type: fixture_data.event_type,
-        fixed: false,
-        combinability: 0,
-        selection_id: element_id,
-        element_id: element_id,
-        home_team: fixture_data.homeTeam,
-        away_team: fixture_data.awayTeam,
-        producer_id: outcome_data.producerID,
-        stake: 0,
-        matchStatus: fixture_data.matchStatus,
-        market_status: outcome_data.status,
-      };
+      // const selection_data: SelectedBet = {
+      //   match_id: parseInt(fixture_data.matchID?.toString() || "0"),
+      //   event_id: parseInt(fixture_data.gameID?.toString() || "0"),
+      //   game_id: fixture_data.gameID
+      //     ? parseInt(fixture_data.gameID?.toString() || "0")
+      //     : parseInt(fixture_data.gameID?.toString() || "0"),
+      //   event_name: fixture_data.name,
+      //   market_id: outcome_data.marketID ?? outcome_data.marketId,
+      //   market_name: outcome_data.marketName,
+      //   specifier: outcome_data.specifier,
+      //   outcome_name: outcome_data.outcomeName,
+      //   display_name: outcome_data.displayName,
+      //   outcome_id: outcome_data.outcomeID,
+      //   odds: parseFloat(outcome_data.odds.toString()).toFixed(2),
+      //   event_date: fixture_data.date,
+      //   tournament: fixture_data.tournament,
+      //   category: fixture_data.categoryName,
+      //   sport: fixture_data.sportName,
+      //   sport_id: fixture_data.sportID,
+      //   type: fixture_data.event_type,
+      //   event_type: fixture_data.event_type,
+      //   fixed: false,
+      //   combinability: 0,
+      //   selection_id: element_id,
+      //   element_id: element_id,
+      //   home_team: fixture_data.homeTeam,
+      //   away_team: fixture_data.awayTeam,
+      //   producer_id: outcome_data.producerID,
+      //   stake: 0,
+      //   matchStatus: fixture_data.matchStatus,
+      //   market_status: outcome_data.status,
+      // };
+      // Create selection data (similar to frapapa-shop)
+      const selection_data: SelectedBet = {
+        match_id: parseInt(payload.fixture_data.matchID?.toString() || "0"),
+        // event_id: parseInt(fixture_data.gameID?.toString() || "0"),
+        game_id: payload.fixture_data.gameID
+          ? parseInt(payload.fixture_data.gameID?.toString() || "0")
+          : parseInt(payload.fixture_data.gameID?.toString() || "0"),
+        game: {
+          matchID: parseInt(payload.fixture_data.matchID?.toString() || "0"),
+          match_id: parseInt(payload.fixture_data.matchID?.toString() || "0"),
+          market_id:
+            payload.outcome_data.marketID ?? payload.outcome_data.marketId,
+          market_name: payload.outcome_data.marketName,
 
+          event_name: payload.fixture_data.name,
+          specifier: payload.outcome_data.specifier,
+          outcome_name: payload.outcome_data.outcomeName,
+          display_name: payload.outcome_data.displayName,
+          outcome_id: payload.outcome_data.outcomeID,
+          odds: parseFloat(payload.outcome_data.odds.toString()).toFixed(2),
+          event_date: payload.fixture_data.date,
+          tournament: payload.fixture_data.tournament,
+          category: payload.fixture_data.categoryName,
+          sport: payload.fixture_data.sportName,
+          type: payload.fixture_data.event_type,
+          event_type: payload.fixture_data.event_type,
+          fixed: false,
+          combinability: 0,
+          selection_id: payload.element_id,
+          element_id: payload.element_id,
+          home_team: payload.fixture_data.homeTeam,
+          away_team: payload.fixture_data.awayTeam,
+          producer_id: payload.outcome_data.producerID,
+          stake: 0,
+          sport_id: payload.fixture_data.sportID,
+          market_status: payload.outcome_data.status,
+          gameID: payload.fixture_data.gameID
+            ? parseInt(payload.fixture_data.gameID?.toString() || "0")
+            : parseInt(payload.fixture_data.gameID?.toString() || "0"),
+          game_id: payload.fixture_data.gameID
+            ? parseInt(payload.fixture_data.gameID?.toString() || "0")
+            : parseInt(payload.fixture_data.gameID?.toString() || "0"),
+          name: payload.fixture_data.name,
+          eventTime: payload.fixture_data.eventTime,
+          categoryName: payload.fixture_data.categoryName,
+          sportName: payload.fixture_data.sportName,
+          sportID: Number(payload.fixture_data.sportID || 0),
+          event_id: payload.fixture_data.gameID,
+        },
+        // matchStatus: fixture_data.matchStatus,
+        odds_type: payload.outcome_data.displayName,
+        market_name: payload.outcome_data.marketName,
+        odds_value: Number(
+          parseFloat(payload.outcome_data.odds.toString()).toFixed(2),
+        ),
+        is_active: false,
+      };
       // if (bet_type === "live") {
       //   selection_data.in_play_time = fixture_data.live_data?.match_time;
       //   selection_data.score = fixture_data.score;
@@ -317,38 +375,38 @@ const BettingSlice = createSlice({
         state.coupon_data.total_odds = Number(
           (
             parseFloat(state.coupon_data.total_odds.toString()) *
-            parseFloat(selection_data.odds)
-          ).toFixed(2)
+            parseFloat(selection_data.game.odds)
+          ).toFixed(2),
         );
 
         // Calculate winnings with bonus
         const winnings = calculateWinnings(
           state.coupon_data,
-          global_vars,
-          bonus_list
+          payload.global_vars!,
+          payload.bonus_list!,
         );
         state.coupon_data.max_win = winnings.max_win;
         state.coupon_data.max_bonus = winnings.max_bonus;
         state.coupon_data.gross_win = winnings.gross_win;
         state.coupon_data.wth_tax = winnings.wth_tax;
         state.coupon_data.tournaments = groupTournament(
-          state.coupon_data.selections
+          state.coupon_data.selections,
         );
         state.coupon_data.fixtures = groupSelections(
-          state.coupon_data.selections
+          state.coupon_data.selections,
         );
 
-        if (bet_type === "live") state.coupon_data.has_live = true;
+        if (payload.bet_type === "live") state.coupon_data.has_live = true;
       } else {
         // Check if selection is from same match (Split bet)
         const same_match_selection = state.coupon_data.selections.find(
-          (sel: any) => sel.match_id === selection_data.match_id
+          (sel) => sel.match_id === selection_data.match_id,
         );
 
         if (same_match_selection) {
           // Remove old selection from same match and add new one
           state.coupon_data.selections = state.coupon_data.selections.filter(
-            (sel: any) => sel.match_id !== selection_data.match_id
+            (sel) => sel.match_id !== selection_data.match_id,
           );
 
           // Add the new selection
@@ -358,29 +416,29 @@ const BettingSlice = createSlice({
           state.coupon_data.total_odds = Number(
             state.coupon_data.selections
               .reduce(
-                (total: number, sel: any) => total * parseFloat(sel.odds),
-                1
+                (total: number, sel) => total * parseFloat(sel.game.odds),
+                1,
               )
-              .toFixed(2)
+              .toFixed(2),
           );
 
           // Update groupings
           state.coupon_data.tournaments = groupTournament(
-            state.coupon_data.selections
+            state.coupon_data.selections,
           );
           state.coupon_data.fixtures = groupSelections(
-            state.coupon_data.selections
+            state.coupon_data.selections,
           );
 
-          if (bet_type === "live") state.coupon_data.has_live = true;
+          if (payload.bet_type === "live") state.coupon_data.has_live = true;
 
           // Handle different bet types based on remaining selections
           if (state.coupon_data.selections.length === 1) {
             state.coupon_data.bet_type = "Single";
             const winnings = calculateWinnings(
               state.coupon_data,
-              global_vars,
-              bonus_list
+              payload.global_vars!,
+              payload.bonus_list!,
             );
             state.coupon_data.max_win = winnings.max_win;
             state.coupon_data.max_bonus = winnings.max_bonus;
@@ -396,11 +454,11 @@ const BettingSlice = createSlice({
                 state.coupon_data.groupings &&
                 state.coupon_data.groupings.length
               ) {
-                // Update combo winnings from total
+                // Update combo winnings 1from total
                 const updated_coupon = updateComboWinningsFromTotal(
                   state.coupon_data,
-                  global_vars,
-                  bonus_list
+                  payload.global_vars!,
+                  payload.bonus_list!,
                 );
                 Object.assign(state.coupon_data, updated_coupon);
               }
@@ -409,8 +467,8 @@ const BettingSlice = createSlice({
               state.coupon_data.bet_type = "Multiple";
               const winnings = calculateWinnings(
                 state.coupon_data,
-                global_vars,
-                bonus_list
+                payload.global_vars!,
+                payload.bonus_list!,
               );
               state.coupon_data.max_win = winnings.max_win;
               state.coupon_data.max_bonus = winnings.max_bonus;
@@ -464,19 +522,19 @@ const BettingSlice = createSlice({
           state.coupon_data.selections.push(selection_data);
           state.coupon_data.total_odds = Number(
             (
-              parseFloat(state.coupon_data.total_odds.toString()) *
-              parseFloat(selection_data.odds)
-            ).toFixed(2)
+              parseFloat((state.coupon_data.total_odds ?? "").toString()) *
+              parseFloat(selection_data.game.odds)
+            ).toFixed(2),
           );
 
           state.coupon_data.tournaments = groupTournament(
-            state.coupon_data.selections
+            state.coupon_data.selections,
           );
           state.coupon_data.fixtures = groupSelections(
-            state.coupon_data.selections
+            state.coupon_data.selections,
           );
 
-          if (bet_type === "live") state.coupon_data.has_live = true;
+          if (payload.bet_type === "live") state.coupon_data.has_live = true;
 
           // Handle different bet types
           if (state.coupon_data.bet_type === "Split") {
@@ -491,21 +549,21 @@ const BettingSlice = createSlice({
 
             state.coupon_data.min_bonus = calculateBonus(
               state.coupon_data,
-              global_vars,
-              bonus_list
+              payload.global_vars!,
+              payload.bonus_list!,
             );
             state.coupon_data.min_gross_win =
               state.coupon_data.min_bonus + min_winnings;
             state.coupon_data.min_wth =
               ((state.coupon_data.min_gross_win - state.coupon_data.stake) *
-                (global_vars.wth_perc || 5)) /
+                (Number(payload.global_vars!.wth_tax) || 5)) /
               100;
             state.coupon_data.min_win =
               state.coupon_data.min_gross_win - state.coupon_data.min_wth;
             state.coupon_data.gross_win = split_props.max_bonus + max_winnings;
             const wth_tax =
               ((state.coupon_data.gross_win - state.coupon_data.stake) *
-                (global_vars.wth_perc || 5)) /
+                (Number(payload.global_vars!.wth_tax) || 5)) /
               100;
             state.coupon_data.wth_tax = wth_tax < 1 ? 0 : wth_tax;
             state.coupon_data.max_win =
@@ -523,8 +581,8 @@ const BettingSlice = createSlice({
                 // Update combo winnings from total
                 const updated_coupon = updateComboWinningsFromTotal(
                   state.coupon_data,
-                  global_vars,
-                  bonus_list
+                  payload.global_vars!,
+                  payload.bonus_list!,
                 );
                 Object.assign(state.coupon_data, updated_coupon);
               }
@@ -533,8 +591,8 @@ const BettingSlice = createSlice({
               state.coupon_data.bet_type = "Multiple";
               const winnings = calculateWinnings(
                 state.coupon_data,
-                global_vars,
-                bonus_list
+                payload.global_vars!,
+                payload.bonus_list!,
               );
               state.coupon_data.max_win = winnings.max_win;
               state.coupon_data.max_bonus = winnings.max_bonus;
@@ -546,23 +604,17 @@ const BettingSlice = createSlice({
       }
 
       // Update simple betting state for compatibility
-      state.selected_bets = state.coupon_data.selections.map((sel: any) => ({
-        game_id: sel.game_id,
-        odds_type: sel.outcome_name,
-        odds_value: parseFloat(sel.odds),
-        game: sel,
-        is_active: true,
-      })) as any;
+      state.selected_bets = state.coupon_data.selections;
 
       state.total_odds = calculateTotalOdds(state.selected_bets);
       state.potential_winnings = calculatePotentialWinnings(
         state.total_odds,
-        state.stake
+        state.stake,
       );
     },
     toggleActiveSelection: (
       state: BettingState,
-      action: PayloadAction<ToggleActiveSelectionPayload>
+      action: PayloadAction<ToggleActiveSelectionPayload>,
     ) => {
       const { event_id, display_name } = action.payload;
 
@@ -570,7 +622,7 @@ const BettingSlice = createSlice({
       const betIndex = state.selected_bets.findIndex(
         (bet) =>
           bet.game.event_id === String(event_id) &&
-          bet.game.display_name === display_name
+          bet.game.display_name === display_name,
       );
 
       if (betIndex !== -1) {
@@ -581,8 +633,8 @@ const BettingSlice = createSlice({
 
       // Also update in coupon_data selections if it exists there
       const selectionIndex = state.coupon_data.selections.findIndex(
-        (sel: any) =>
-          sel.event_id === event_id && sel.display_name === display_name
+        (sel) =>
+          sel.game_id === event_id && sel.game.display_name === display_name,
       );
 
       if (selectionIndex !== -1) {
@@ -596,19 +648,13 @@ const BettingSlice = createSlice({
 
     removeBet: (
       state: BettingState,
-      action: PayloadAction<RemoveBetPayload>
+      { payload }: PayloadAction<RemoveBetPayload>,
     ) => {
-      const {
-        event_id,
-        display_name,
-        global_vars = {},
-        bonus_list = [],
-      } = action.payload;
+      const { event_id, display_name, global_vars, bonus_list = [] } = payload;
 
-      // Remove the specific selection
       state.coupon_data.selections = state.coupon_data.selections.filter(
-        (sel: any) =>
-          !(sel.event_id === event_id && sel.display_name === display_name)
+        (sel) =>
+          !(sel.game_id === event_id && sel.game.display_name === display_name),
       );
 
       if (state.coupon_data.selections.length === 0) {
@@ -632,16 +678,16 @@ const BettingSlice = createSlice({
       // Recalculate total odds
       state.coupon_data.total_odds = Number(
         state.coupon_data.selections
-          .reduce((total: number, sel: any) => total * parseFloat(sel.odds), 1)
-          .toFixed(2)
+          .reduce((total: number, sel) => total * parseFloat(sel.game.odds), 1)
+          .toFixed(2),
       );
 
       // Update groupings and recalculate
       state.coupon_data.tournaments = groupTournament(
-        state.coupon_data.selections
+        state.coupon_data.selections,
       );
       state.coupon_data.fixtures = groupSelections(
-        state.coupon_data.selections
+        state.coupon_data.selections,
       );
 
       // Recalculate based on remaining selections
@@ -649,8 +695,8 @@ const BettingSlice = createSlice({
         state.coupon_data.bet_type = "Single";
         const winnings = calculateWinnings(
           state.coupon_data,
-          global_vars,
-          bonus_list
+          global_vars!,
+          bonus_list,
         );
         state.coupon_data.max_win = winnings.max_win;
         state.coupon_data.max_bonus = winnings.max_bonus;
@@ -664,15 +710,15 @@ const BettingSlice = createSlice({
         if (state.coupon_data.bet_type === "Combo") {
           const updated_coupon = updateComboWinningsFromTotal(
             state.coupon_data,
-            global_vars,
-            bonus_list
+            global_vars!,
+            bonus_list,
           );
           Object.assign(state.coupon_data, updated_coupon);
         } else {
           const winnings = calculateWinnings(
             state.coupon_data,
-            global_vars,
-            bonus_list
+            global_vars!,
+            bonus_list,
           );
           state.coupon_data.max_win = winnings.max_win;
           state.coupon_data.max_bonus = winnings.max_bonus;
@@ -681,29 +727,25 @@ const BettingSlice = createSlice({
         }
       }
 
+      const sel = state.coupon_data.selections;
+
       // Update simple betting state for compatibility
-      state.selected_bets = state.coupon_data.selections.map((sel: any) => ({
-        game_id: sel.game_id,
-        odds_type: sel.outcome_name,
-        odds_value: parseFloat(sel.odds),
-        game: sel,
-      })) as any;
+      state.selected_bets = state.coupon_data.selections;
 
       state.total_odds = calculateTotalOdds(state.selected_bets);
       state.potential_winnings = calculatePotentialWinnings(
         state.total_odds,
-        state.stake
+        state.stake,
       );
     },
 
     updateStake: (
       state: BettingState,
-      action: PayloadAction<UpdateStakePayload>
+      action: PayloadAction<UpdateStakePayload>,
     ) => {
       const { stake, global_vars = {}, bonus_list = [] } = action.payload;
       state.stake = Number(stake);
       state.coupon_data.stake = stake;
-      console.log("Updated stake in coupon_data:", state.coupon_data.stake);
 
       // Check current bet_type from Redux state and handle accordingly
       if (
@@ -712,15 +754,14 @@ const BettingSlice = createSlice({
       ) {
         // Combined bet type: distribute stake across checked combos
         const checkedCombos = state.coupon_data.combos.filter(
-          (combo: any) => combo.checked
+          (combo) => combo.checked,
         );
 
         if (checkedCombos.length > 0) {
           // Calculate total combinations from checked combos
           const totalCombinations = checkedCombos.reduce(
-            (sum: number, combo: any) =>
-              sum + (combo.combinations || combo.Combinations || 0),
-            0
+            (sum: number, combo) => sum + (combo.combinations || 0),
+            0,
           );
 
           if (totalCombinations > 0) {
@@ -728,17 +769,14 @@ const BettingSlice = createSlice({
             const stakePerCombination = Number(stake) / totalCombinations;
 
             // Update each checked combo with distributed stake
-            state.coupon_data.combos.forEach((combo: any, index: number) => {
-              if (
-                combo.checked &&
-                (combo.combinations > 0 || combo.Combinations > 0)
-              ) {
+            state.coupon_data.combos.forEach((combo, index: number) => {
+              if (combo.checked && combo.combinations > 0) {
                 combo.stake_per_combination = stakePerCombination;
 
                 // Calculate min/max odds for this combo
-                const grouping = combo.grouping || combo.Grouping || 2;
+                const grouping = combo.grouping || 2;
                 const sortedOdds = state.selected_bets
-                  .map((bet: any) => bet.odds_value)
+                  .map((bet) => Number(bet.game.odds))
                   .sort((a: number, b: number) => a - b);
 
                 const minOddsForCombo = sortedOdds
@@ -749,13 +787,9 @@ const BettingSlice = createSlice({
                   .reduce((total: number, odds: number) => total * odds, 1);
 
                 combo.min_win =
-                  minOddsForCombo *
-                  stakePerCombination *
-                  (combo.combinations || combo.Combinations);
+                  minOddsForCombo * stakePerCombination * combo.combinations;
                 combo.max_win =
-                  maxOddsForCombo *
-                  stakePerCombination *
-                  (combo.combinations || combo.Combinations);
+                  maxOddsForCombo * stakePerCombination * combo.combinations;
               }
             });
 
@@ -763,7 +797,7 @@ const BettingSlice = createSlice({
             let totalMinWin = 0;
             let totalMaxWin = 0;
 
-            state.coupon_data.combos.forEach((combo: any) => {
+            state.coupon_data.combos.forEach((combo) => {
               if (combo.checked) {
                 totalMinWin += combo.min_win || 0;
                 totalMaxWin += combo.max_win || 0;
@@ -779,7 +813,7 @@ const BettingSlice = createSlice({
         const updated_coupon = updateComboWinningsFromTotal(
           state.coupon_data,
           global_vars,
-          bonus_list
+          bonus_list,
         );
         Object.assign(state.coupon_data, updated_coupon);
       } else {
@@ -788,7 +822,7 @@ const BettingSlice = createSlice({
           const winnings = calculateWinnings(
             state.coupon_data,
             global_vars,
-            bonus_list
+            bonus_list,
           );
           state.coupon_data.max_win = winnings.max_win;
           state.coupon_data.max_bonus = winnings.max_bonus;
@@ -798,7 +832,7 @@ const BettingSlice = createSlice({
           const winnings = calculateWinnings(
             state.coupon_data,
             global_vars,
-            bonus_list
+            bonus_list,
           );
           state.coupon_data.max_win = winnings.max_win;
           state.coupon_data.max_bonus = winnings.max_bonus;
@@ -817,7 +851,7 @@ const BettingSlice = createSlice({
           state.coupon_data.min_bonus = calculateBonus(
             state.coupon_data,
             global_vars,
-            bonus_list
+            bonus_list,
           );
           state.coupon_data.min_gross_win =
             state.coupon_data.min_bonus + min_winnings;
@@ -840,13 +874,13 @@ const BettingSlice = createSlice({
 
       state.potential_winnings = calculatePotentialWinnings(
         state.total_odds,
-        state.stake
+        state.stake,
       );
     },
 
     updateComboStake: (
       state: BettingState,
-      action: PayloadAction<UpdateComboStakePayload>
+      action: PayloadAction<UpdateComboStakePayload>,
     ) => {
       const {
         combo_index,
@@ -884,13 +918,13 @@ const BettingSlice = createSlice({
 
         // Recalculate total stake from all combos
         const totalStake = state.coupon_data.combos.reduce(
-          (total: number, combo: any) => {
+          (total: number, combo) => {
             if (combo.stake_per_combination && combo.combinations) {
               return total + combo.combinations * combo.stake_per_combination;
             }
             return total;
           },
-          0
+          0,
         );
 
         state.coupon_data.total_stake = totalStake;
@@ -898,12 +932,12 @@ const BettingSlice = createSlice({
 
         // Recalculate total min/max wins
         const totalMinWin = state.coupon_data.combos.reduce(
-          (total: number, combo: any) => total + (combo.min_win || 0),
-          0
+          (total: number, combo) => total + (combo.min_win || 0),
+          0,
         );
         const totalMaxWin = state.coupon_data.combos.reduce(
-          (total: number, combo: any) => total + (combo.max_win || 0),
-          0
+          (total: number, combo) => total + (combo.max_win || 0),
+          0,
         );
 
         state.coupon_data.min_win = totalMinWin;
@@ -913,7 +947,7 @@ const BettingSlice = createSlice({
 
     toggleComboChecked: (
       state: BettingState,
-      action: PayloadAction<{ combo_index: number }>
+      action: PayloadAction<{ combo_index: number }>,
     ) => {
       const { combo_index } = action.payload;
 
@@ -958,9 +992,9 @@ const BettingSlice = createSlice({
         outcome_id: string;
         new_odds: number;
         market_id?: number;
-        global_vars?: any;
-        bonus_list?: any[];
-      }>
+        global_vars?: GlobalVariables;
+        bonus_list?: BonusList[];
+      }>,
     ) => {
       const {
         match_id,
@@ -993,13 +1027,14 @@ const BettingSlice = createSlice({
         };
 
         console.log(
-          `🎯 Odds change tracked: ${outcome_id} ${previousOdds} → ${new_odds} (${change_direction})`
+          `🎯 Odds change tracked: ${outcome_id} ${previousOdds} → ${new_odds} (${change_direction})`,
         );
       }
 
       // Find and update the bet in selected_bets
       const betIndex = state.selected_bets.findIndex(
-        (bet) => bet.match_id === match_id && bet.game.outcome_id === outcome_id
+        (bet) =>
+          bet.match_id === match_id && bet.game.outcome_id === outcome_id,
       );
 
       if (betIndex !== -1) {
@@ -1029,27 +1064,31 @@ const BettingSlice = createSlice({
         // Recalculate coupon data
         state.total_odds = state.selected_bets.reduce(
           (total, bet) => total * bet.odds_value,
-          1
+          1,
         );
         state.potential_winnings = calculatePotentialWinnings(
           state.total_odds,
-          state.stake
+          state.stake,
         );
       }
 
       // Also update in coupon_data.selections
       const selectionIndex = state.coupon_data.selections.findIndex(
-        (selection: any) =>
-          selection.match_id === match_id && selection.outcome_id === outcome_id
+        (selection) =>
+          selection.match_id === match_id &&
+          selection.game.outcome_id === outcome_id,
       );
 
       if (selectionIndex !== -1) {
         const previousOdds = parseFloat(
-          state.coupon_data.selections[selectionIndex].odds
+          state.coupon_data.selections[selectionIndex].game.odds,
         );
         state.coupon_data.selections[selectionIndex] = {
           ...state.coupon_data.selections[selectionIndex],
-          odds: new_odds.toString(),
+          game: {
+            ...state.coupon_data.selections[selectionIndex].game,
+            odds: new_odds.toString(),
+          },
           previous_odds: previousOdds,
           odds_change_direction:
             new_odds > previousOdds
@@ -1077,7 +1116,7 @@ const BettingSlice = createSlice({
         event_id: number;
         market_id: number;
         outcomes: LiveOutcome[];
-      }>
+      }>,
     ) => {
       const { event_id, outcomes } = action.payload;
 
@@ -1086,7 +1125,7 @@ const BettingSlice = createSlice({
         if (bet.game_id === event_id) {
           // Find matching outcome and update odds
           const matchingOutcome = outcomes.find(
-            (outcome) => outcome.id === bet.game.outcome_id
+            (outcome) => outcome.id === bet.game.outcome_id,
           );
           if (matchingOutcome) {
             bet.odds_value = matchingOutcome.odds;
@@ -1099,7 +1138,7 @@ const BettingSlice = createSlice({
       state.total_odds = calculateTotalOdds(state.selected_bets);
       state.potential_winnings = calculatePotentialWinnings(
         state.total_odds,
-        state.stake
+        state.stake,
       );
     },
 
@@ -1109,7 +1148,7 @@ const BettingSlice = createSlice({
         event_id: number;
         market_id: number;
         status: number;
-      }>
+      }>,
     ) => {
       const { event_id, market_id, status } = action.payload;
 
@@ -1126,7 +1165,7 @@ const BettingSlice = createSlice({
       action: PayloadAction<{
         event_id: number;
         market_ids?: number[];
-      }>
+      }>,
     ) => {
       const { event_id, market_ids } = action.payload;
 
@@ -1145,7 +1184,7 @@ const BettingSlice = createSlice({
       action: PayloadAction<{
         event_id: number;
         market_ids?: number[];
-      }>
+      }>,
     ) => {
       const { event_id, market_ids } = action.payload;
 
@@ -1164,7 +1203,7 @@ const BettingSlice = createSlice({
       action: PayloadAction<{
         event_id: number;
         market_ids?: number[];
-      }>
+      }>,
     ) => {
       const { event_id, market_ids } = action.payload;
 
@@ -1196,7 +1235,7 @@ const BettingSlice = createSlice({
     // Clear odds changes for a specific match
     clearOddsChangesForMatch: (
       state: BettingState,
-      action: PayloadAction<number>
+      action: PayloadAction<number>,
     ) => {
       const match_id = action.payload;
       Object.keys(state.odds_changes).forEach((key) => {
@@ -1209,7 +1248,7 @@ const BettingSlice = createSlice({
     // Set display duration for odds changes
     setOddsDisplayDuration: (
       state: BettingState,
-      action: PayloadAction<number>
+      action: PayloadAction<number>,
     ) => {
       state.display_duration = action.payload;
     },
@@ -1217,7 +1256,7 @@ const BettingSlice = createSlice({
     // Suspend all markets for a specific match
     suspendAllMarketsForMatch: (
       state: BettingState,
-      action: PayloadAction<number>
+      action: PayloadAction<number>,
     ) => {
       const matchId = action.payload;
 
@@ -1237,13 +1276,13 @@ const BettingSlice = createSlice({
     },
     setBetslip: (
       state: BettingState,
-      action: PayloadAction<BetSlip | null>
+      action: PayloadAction<BetSlip | null>,
     ) => {
       state.betslip = action.payload;
     },
     updateBetType: (
       state: BettingState,
-      action: PayloadAction<UpdateBetTypePayload>
+      action: PayloadAction<UpdateBetTypePayload>,
     ) => {
       const { bet_type } = action.payload;
       state.bet_type = bet_type;
@@ -1254,16 +1293,22 @@ const BettingSlice = createSlice({
             ? "Combined"
             : "Split";
     },
-
+    setBonusList: (
+      state,
+      {
+        payload,
+      }: PayloadAction<
+        { bonus: string; id: string; min_odd: string; ticket_length: number }[]
+      >,
+    ) => {
+      state.bonus_list = payload;
+    },
     setBetData: (
       state: BettingState,
-      {payload}: PayloadAction<
-         BetHistoryBet
-      >
+      { payload }: PayloadAction<BetHistoryBet>,
     ) => {
-   
       state.bet_data = payload;
-    }
+    },
   },
 });
 
@@ -1290,7 +1335,8 @@ export const {
   setOddsDisplayDuration,
   suspendAllMarketsForMatch,
   updateBetType,
-  setBetData
+  setBetData,
+  setBonusList,
 } = BettingSlice.actions;
 
 // Helper function to check if a specific bet is selected
@@ -1322,7 +1368,7 @@ export const isBetSelected = ({
       bet.game.display_name == odds_type &&
       bet.game.market_id == market_id &&
       bet.game.specifier == specifier &&
-      bet.game.outcome_id == outcome_id
+      bet.game.outcome_id == outcome_id,
   );
   return bet;
 };
@@ -1336,7 +1382,7 @@ export const getBetsForGame = (selected_bets: any[], gameId: string): any[] => {
 export const selectOddsChange = (
   state: { betting: BettingState },
   match_id: number,
-  outcome_id: string
+  outcome_id: string,
 ) => {
   const key = `${match_id}_${outcome_id}`;
   const change = state.betting?.odds_changes?.[key];
@@ -1351,17 +1397,17 @@ export const selectAllActiveOddsChanges = (state: {
 }) => {
   const now = Date.now();
   return Object.values(state.betting?.odds_changes || {}).filter(
-    (change) => change.display_until > now
+    (change) => change.display_until > now,
   );
 };
 
 export const selectOddsChangesForMatch = (
   state: { betting: BettingState },
-  match_id: number
+  match_id: number,
 ) => {
   const now = Date.now();
   return Object.values(state.betting?.odds_changes || {}).filter(
-    (change) => change.match_id === match_id && change.display_until > now
+    (change) => change.match_id === match_id && change.display_until > now,
   );
 };
 

@@ -68,24 +68,31 @@ const CountriesList = ({ sport_id }: CountriesListProps) => {
       {/* Header */}
       <View
         style={{
-          paddingInline: 12,
-          paddingBlock: 6,
+          paddingInline: 10,
+          paddingBlock: 4,
           borderBottomWidth: 1,
           borderColor: "#333",
         }}
       >
-        <Text style={{ color: "#fff", fontSize: 17, fontWeight: "bold" }}>
+        <Text style={{ color: "#fff", fontSize: 15, fontWeight: "bold" }}>
           A-Z
         </Text>
       </View>
 
       {/* Categories */}
       <ScrollView>
-        {categories.map((cat, idx) => {
-          return (
-            <CategoryItem key={idx} category={cat} sportId={String(sport_id)} />
-          );
-        })}
+        <View style={{ flex: 1, paddingBottom: 20 }}>
+          {categories.map((cat, idx) => {
+            return (
+              <CategoryItem
+                key={idx}
+                category={cat}
+                sportId={String(sport_id)}
+              />
+            );
+          })}
+        </View>
+        <View style={{ height: 160 }}></View>
       </ScrollView>
     </View>
   );

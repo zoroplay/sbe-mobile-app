@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fff",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    padding: 8,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: "#E0E0E0",
     elevation: 2,
@@ -129,21 +129,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   matchInfo: {
     flex: 1,
     marginRight: 8,
   },
   matchName: {
-    fontSize: 14,
+    fontSize: 12,
     // fontWeight: "600",
     fontFamily: "PoppinsSemibold",
     color: "#111827",
     marginBottom: 2,
   },
   tournament: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "PoppinsSemibold",
     color: "#6b7280",
   },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   selectionInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 8,
   },
   marketName: {
     fontSize: 12,
@@ -174,20 +174,20 @@ const styles = StyleSheet.create({
   },
   oddsContainer: {
     backgroundColor: "#F3F4F6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   odds: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
   },
 
   // Stake Section
   stakeSection: {
-    marginTop: 6,
-    paddingTop: 8,
+    marginTop: 2,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
@@ -200,12 +200,12 @@ const styles = StyleSheet.create({
   },
   stakeInputText: {
     color: "#111827",
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "500",
   },
   stakeSuffix: {
     color: "#6b7280",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
   potentialWinRow: {
@@ -213,8 +213,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#F0FDF4",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 6,
   },
   potentialWinLabel: {
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   potentialWinValue: {
-    fontSize: 15,
+    fontSize: 13,
     color: "#15803d",
     fontWeight: "700",
   },
   potentialWinDecimal: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#15803d",
   },
 });

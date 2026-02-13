@@ -58,11 +58,12 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORTS_MENU, {
           period: data.period,
-          start_date: data.start_date || "",
-          end_date: data.end_date || "",
-          timeoffset: data.timeoffset,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          start: data.start_date || "",
+          end: data.end_date || "",
+        },
       }),
       transformResponse: (response: SportsMenuResponse) => {
         // You can transform the response here if needed
@@ -77,10 +78,11 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORT_CATEGORIES, {
           sport_id: data.sport_id,
-          period: data.period,
-          timeoffset: data.timeoffset,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          period: data.period,
+        },
       }),
     }),
     tournaments: builder.query<TournamentsResponse, TournamentsDto>({
@@ -94,12 +96,14 @@ const BetsApiSlice = apiSlice.injectEndpoints({
     queryFixtures: builder.mutation<FixturesResponse, string>({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.QUERY_FIXTURES, {
-          search: data,
           sport_id: "0",
-          upcoming: "1",
-          markets: ["1", "10", "18"],
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          search: data,
+          upcoming: "1",
+          markets: ["1", "10", "18"],
+        },
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
@@ -109,13 +113,21 @@ const BetsApiSlice = apiSlice.injectEndpoints({
                 ...tem,
                 event_type: "pre",
                 status: (tem as any).status ?? 0,
+                outcomes: tem.outcomes.map((outcome) => ({
+                  ...outcome,
+                  marketName:
+                    data.markets.find(
+                      (market) =>
+                        Number(market.marketID) === Number(outcome.marketID),
+                    )?.marketName || "",
+                })),
               }))
             : [];
           dispatch(
             setSearchFixtures({
               ...data,
               fixtures: fixtures as unknown as PreMatchFixture[],
-            })
+            }),
           );
         } catch (error) {
           return;
@@ -125,22 +137,29 @@ const BetsApiSlice = apiSlice.injectEndpoints({
     fixtures: builder.query<FixturesResponse, FixturesDto>({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_FIXTURES, {
-          sport_id: data.sport_id ?? "",
           tournament_id: data.tournament_id,
-          period: data.period ?? "",
-          market_id: data.market_id!,
-          specifier: data.specifier,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          sportID: data.sport_id ?? "",
+          period: data.period ?? "",
+          marketID: data.market_id!,
+          specifier: data.specifier,
+        },
       }),
     }),
-    fixturesHighlights: builder.query<FixturesResponse, { sport_id: string , today?: string}>({
+    fixturesHighlights: builder.query<
+      FixturesResponse,
+      { sport_id: string; today?: string }
+    >({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORTS_HIGHLIGHT, {
           sport_id: data.sport_id || "1",
-          today: data.today!,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          today: data.today!,
+        },
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
@@ -150,13 +169,21 @@ const BetsApiSlice = apiSlice.injectEndpoints({
                 ...tem,
                 event_type: "pre",
                 status: (tem as any).status ?? 0,
+                outcomes: tem.outcomes.map((outcome) => ({
+                  ...outcome,
+                  marketName:
+                    data.markets.find(
+                      (market) =>
+                        Number(market.marketID) === Number(outcome.marketID),
+                    )?.marketName || "",
+                })),
               }))
             : [];
           dispatch(
             setFixtures({
               ...data,
               fixtures: fixtures as unknown as PreMatchFixture[],
-            })
+            }),
           );
         } catch (error) {
           return;
@@ -167,12 +194,14 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.FETCH_FIXTURES, {
           tournament_id: data.tournament_id,
-          sport_id: data.sport_id ?? "",
+        }),
+        method: REQUEST_ACTIONS.GET,
+        params: {
+          sid: data.sport_id ?? "",
           period: data.period ?? "",
           markets: data.markets!.join(","),
           specifier: data.specifier,
-        }),
-        method: REQUEST_ACTIONS.GET,
+        },
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
@@ -188,7 +217,7 @@ const BetsApiSlice = apiSlice.injectEndpoints({
             setFixtures({
               ...data,
               fixtures: fixtures as unknown as PreMatchFixture[],
-            })
+            }),
           );
         } catch (error) {
           return;
@@ -200,24 +229,28 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_FIXTURE, {
           tournament_id: data.tournament_id,
-          sport_id: data.sport_id ?? "",
+        }),
+        method: REQUEST_ACTIONS.GET,
+        params: {
+          sid: data.sport_id ?? "",
           period: data.period ?? "",
           market_id: data.markets,
           specifier: data.specifier,
-        }),
-        method: REQUEST_ACTIONS.GET,
+        },
       }),
     }),
     getFixture: builder.query<FixtureResponse, FixturesDto>({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_FIXTURE, {
           tournament_id: data.tournament_id,
-          sport_id: data.sport_id ?? "",
-          period: data.period ?? "",
-          markets: data.markets,
-          specifier: data.specifier,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          sid: data.sport_id ?? "",
+          period: data.period ?? "",
+          market_id: data.markets,
+          specifier: data.specifier,
+        },
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
@@ -271,9 +304,7 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       GetTransactionsDto
     >({
       query: (data) => ({
-        url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_TRANSACTIONS, {
-          
-        }),
+        url: AppHelper.buildQueryUrl(BETTING_ACTIONS.GET_TRANSACTIONS, {}),
         method: REQUEST_ACTIONS.POST,
         body: data,
       }),
@@ -315,9 +346,11 @@ const BetsApiSlice = apiSlice.injectEndpoints({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORTS_HIGHLIGHT_LIVE, {
           sport_id: data.sport_id,
-          markets: data.markets,
         }),
         method: REQUEST_ACTIONS.GET,
+        params: {
+          markets: data.markets,
+        },
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
@@ -394,7 +427,11 @@ const BetsApiSlice = apiSlice.injectEndpoints({
               awayTeamID: liveFixture.awayTeamID || 0,
               sportName: liveFixture.sportName,
               outcomes: liveFixture.outcomes.map((outcome) => ({
-                marketName: "",
+                marketName:
+                  data.markets.find(
+                    (market) =>
+                      Number(market.marketID) === Number(outcome.marketID),
+                  )?.marketName || "",
                 outcomeName: outcome.outcomeName,
                 specifier: outcome.specifier,
                 outcomeID: outcome.outcomeID,
@@ -413,12 +450,15 @@ const BetsApiSlice = apiSlice.injectEndpoints({
             setLiveFixtures({
               live_fixtures: liveFixtures,
               markets: data.markets || [],
-            })
+            }),
           );
         } catch (error) {
+          const errObj = error as {
+            error?: { status?: any; data?: { message?: string } };
+          };
           console.warn("Live fixtures fetch failed:", {
-            status: error?.error?.status,
-            message: error?.error?.data?.message || "Server error",
+            status: errObj.error?.status,
+            message: errObj.error?.data?.message || "Server error",
           });
           // console.error("Error processing live fixtures:", error);
         }
@@ -442,9 +482,6 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         return Array.isArray(response.data) ? response.data : [];
       },
     }),
-
-
-
   }),
 });
 
