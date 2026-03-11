@@ -66,10 +66,13 @@ const LiveSection = () => {
     isLoading: liveLoading,
     error: liveError,
     refetch,
-  } = useSportsHighlightLiveQuery({
-    sport_id: "0", // 0 for all sports
-    markets: "1,10,18", // 1X2, DC, Over/Under markets
-  });
+  } = useSportsHighlightLiveQuery(
+    {
+      sport_id: "0", // 0 for all sports
+      markets: "1,10,18", // 1X2, DC, Over/Under markets
+    },
+    { pollingInterval: 30000 },
+  );
 
   const handleLiveBetStop = useCallback(
     (data: any) => {

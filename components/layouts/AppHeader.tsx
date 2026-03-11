@@ -27,7 +27,12 @@ export default function AppHeader() {
         />
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => {
+            router.push("/search");
+          }}
+        >
           <FontAwesome name="search" size={22} color="#C72C3B" />
         </TouchableOpacity>
         {is_authenticated ? (

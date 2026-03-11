@@ -47,7 +47,7 @@ export default function ModalScreen() {
           ...fixtures_data,
           markets: fixtures_data?.markets ?? [],
           fixtures: fixtures as unknown as PreMatchFixture[],
-        })
+        }),
       );
     }
   }, [is_success]);

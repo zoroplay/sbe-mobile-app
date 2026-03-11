@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import SlipItem from "../../bets/betslip/SlipItem";
 import BottomModal from "../modals/BottomModal";
 import Input from "@/components/inputs/Input";
@@ -24,6 +24,7 @@ import CurrencyFormatter from "@/components/inputs/CurrencyFormatter";
 import { Text } from "@/components/Themed";
 import SingleSearchInput from "@/components/inputs/SingleSearchInput";
 import { MODAL_COMPONENTS } from "@/store/features/types";
+import { useMqtt } from "@/hooks/useMqtt";
 
 interface LoginBottomModalProps {
   onClose: () => void;
@@ -49,6 +50,8 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
     updateComboStake,
     potential_winnings,
     coupon_data,
+    removeAllBetsForMatch,
+    updateBetOdds,
   } = useBetting();
   const {
     isConfirming,
@@ -59,6 +62,9 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
     confirmBet,
     cancelBet,
     validateBet,
+    isBookConfirming,
+    confirmBookBet,
+    cancelBookBet,
   } = usePlaceBet();
   // --- Tax and winnings calculations (mimic Vue logic) ---
   const taxEnabled = global_variables?.tax_enabled === "1";
@@ -96,6 +102,64 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
   const DEFAULT_HEIGHT =
     SCREEN_HEIGHT * (selected_bets.length > 0 ? 0.9 : 0.35);
   const [findBet, { isLoading: isFindingBet, isError }] = useFindBetMutation();
+
+  // ── MQTT: react to bet_stop and odds_change for all bets in the slip ────
+  const { subscribe } = useMqtt();
+  const uniqueMatchIds = useMemo(
+    () => [...new Set(selected_bets.map((s) => s.match_id).filter(Boolean))],
+    [selected_bets],
+  );
+  useEffect(() => {
+    if (!uniqueMatchIds.length) return;
+
+    const unsubs = uniqueMatchIds.flatMap((matchId) => [
+      // bet_stop → remove all selections for that match
+      subscribe(`feeds/live/bet_stop/${matchId}`, () =>
+        removeAllBetsForMatch(matchId),
+      ),
+      subscribe(`feeds/prematch/bet_stop/${matchId}`, () =>
+        removeAllBetsForMatch(matchId),
+      ),
+      // odds_change → update odds for any matching outcome in the slip
+      subscribe(`feeds/live/odds_change/${matchId}`, (data: any) => {
+        const markets: any[] = data?.markets || data?.odds?.markets || [];
+        markets.forEach((market) => {
+          const outcomes: any[] = market.outcomes || market.outcome || [];
+          outcomes.forEach((outcome) => {
+            if (outcome?.id && outcome?.odds != null) {
+              updateBetOdds({
+                event_id: matchId,
+                outcome_id: String(outcome.id),
+                new_odds: Number(outcome.odds),
+                status: outcome.status,
+                active: outcome.active,
+              });
+            }
+          });
+        });
+      }),
+      subscribe(`feeds/prematch/odds_change/${matchId}`, (data: any) => {
+        const markets: any[] = data?.markets || data?.odds?.markets || [];
+        markets.forEach((market) => {
+          const outcomes: any[] = market.outcomes || market.outcome || [];
+          outcomes.forEach((outcome) => {
+            if (outcome?.id && outcome?.odds != null) {
+              updateBetOdds({
+                event_id: matchId,
+                outcome_id: String(outcome.id),
+                new_odds: Number(outcome.odds),
+                status: outcome.status,
+                active: outcome.active,
+              });
+            }
+          });
+        });
+      }),
+    ]);
+
+    return () => unsubs.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uniqueMatchIds.join(",")]);
 
   const handleBookingNumberChange = useCallback(
     async (text: string) => {
@@ -414,7 +478,7 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
             {/* Fixed Bottom Section - Only show for Multiple bets */}
             <View style={styles.fixedBottomContainer}>
               {/* Bet Details Card */}
-              {isConfirming && (
+              {(isConfirming || isBookConfirming) && (
                 <View style={styles.detailsCard}>
                   {/* Stake Input */}
                   <View style={styles.stakeInputContainer}>
@@ -479,30 +543,114 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
               {/* If not authenticated, show login button */}
               {!is_authenticated ? (
                 <View style={styles.actionButtonsContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.placeBtn,
-                      {
-                        width: "100%",
-                        backgroundColor: "#062663",
-                        borderColor: "#062663",
-                        borderRadius: 8,
-                      },
-                    ]}
-                    onPress={() => {
-                      openModal({
-                        modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
-                      });
-                    }}
-                  >
-                    <Ionicons
-                      name="log-in-outline"
-                      size={20}
-                      color="#fff"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.placeBtnText}>LOGIN TO PLACE BET</Text>
-                  </TouchableOpacity>
+                  {isBookConfirming ? (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.bookBtn,
+                          {
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                            borderRightWidth: 1,
+                            borderRightColor: "#C72C3B",
+                            backgroundColor: "#C72C3B",
+                            borderColor: "#C72C3B",
+                          },
+                        ]}
+                        onPress={cancelBookBet}
+                        disabled={is_booking}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={18}
+                          color="#fff"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.bookBtnText}>CANCEL</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.bookBtn,
+                          {
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
+                            borderRightWidth: 1,
+
+                            borderColor: "#1A5904",
+                          },
+                        ]}
+                        onPress={bookBet}
+                        disabled={is_booking}
+                      >
+                        {is_booking ? (
+                          <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color="#fff"
+                              style={{ marginRight: 4 }}
+                            />
+                            <Text style={styles.bookBtnText}>CONFIRM BOOK</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.bookBtn,
+                          {
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                            borderRightWidth: 1,
+                          },
+                        ]}
+                        onPress={confirmBookBet}
+                        disabled={is_booking}
+                      >
+                        <>
+                          <Ionicons
+                            name="book"
+                            size={14}
+                            color="#fff"
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text style={styles.bookBtnText}>BOOK BET</Text>
+                        </>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.placeBtn,
+                          {
+                            width: "100%",
+                            backgroundColor: "#062663",
+                            borderColor: "#062663",
+                            borderRadius: 8,
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
+                          },
+                        ]}
+                        onPress={() => {
+                          openModal({
+                            modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+                          });
+                        }}
+                      >
+                        <Ionicons
+                          name="log-in-outline"
+                          size={20}
+                          color="#fff"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.placeBtnText}>
+                          LOGIN TO PLACE BET
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               ) : (
                 <View style={styles.actionButtonsContainer}>
@@ -561,6 +709,63 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                         )}
                       </TouchableOpacity>
                     </>
+                  ) : isBookConfirming ? (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.bookBtn,
+                          {
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                            borderRightWidth: 1,
+                            borderRightColor: "#C72C3B",
+                            backgroundColor: "#C72C3B",
+                            borderColor: "#C72C3B",
+                          },
+                        ]}
+                        onPress={cancelBookBet}
+                        disabled={is_booking}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={18}
+                          color="#fff"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.bookBtnText}>CANCEL</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.placeBtn,
+                          {
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
+                            borderRightWidth: 1,
+                            borderRightColor: "#1A5904",
+                            backgroundColor: "#1A5904",
+                            borderColor: "#1A5904",
+                          },
+                        ]}
+                        onPress={bookBet}
+                        disabled={is_booking}
+                      >
+                        {is_booking ? (
+                          <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color="#fff"
+                              style={{ marginRight: 4 }}
+                            />
+                            <Text style={styles.placeBtnText}>
+                              CONFIRM BOOK
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </>
                   ) : (
                     <>
                       <TouchableOpacity
@@ -572,22 +777,18 @@ const BetslipModal = ({ onClose }: LoginBottomModalProps) => {
                             borderRightWidth: 1,
                           },
                         ]}
-                        onPress={bookBet}
-                        disabled={is_booking}
+                        onPress={confirmBookBet}
+                        disabled={is_booking || isPlacingBet}
                       >
-                        {is_booking ? (
-                          <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                          <>
-                            <Ionicons
-                              name="book"
-                              size={14}
-                              color="#fff"
-                              style={{ marginRight: 4 }}
-                            />
-                            <Text style={styles.bookBtnText}>BOOK BET</Text>
-                          </>
-                        )}
+                        <>
+                          <Ionicons
+                            name="book"
+                            size={14}
+                            color="#fff"
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text style={styles.bookBtnText}>BOOK BET</Text>
+                        </>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[

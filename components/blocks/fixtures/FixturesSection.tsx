@@ -1,4 +1,10 @@
-import React from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   FlatList,
@@ -9,23 +15,34 @@ import {
 } from "react-native";
 import FixtureCard from "./FixtureCard";
 import { useAppSelector } from "@/hooks/useAppDispatch";
-import { useFixturesQuery } from "@/store/services/bets.service";
-import { useState, useEffect, useRef } from "react";
+import { useLazyFixturesQuery } from "@/store/services/bets.service";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Fixture } from "@/data/types/betting.types";
 import { Text } from "@/components/Themed";
-import { getFirebaseImage, localImages, remoteImages } from "@/assets/images";
+import { getFirebaseImage, localImages } from "@/assets/images";
+
+const CONCURRENCY_LIMIT = 3;
+
+interface TournamentGamesEntry {
+  tournamentID: number;
+  fixtures: any[];
+  markets: any[];
+}
+
+interface FlatFixtureItem {
+  fixture: any;
+  tournamentID: number;
+}
 
 const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
   is_loading,
 }) => {
   const { top_bets } = useAppSelector((state) => state.fixtures);
+  const [fetchFixtures] = useLazyFixturesQuery();
 
-  // Reorder top_bets to put Soccer first
-  const orderedTopBets = (() => {
-    if (!top_bets || top_bets.length === 0) return top_bets;
+  const orderedTopBets = useMemo(() => {
+    if (!top_bets || top_bets.length === 0) return top_bets ?? [];
     const arr = [...top_bets];
-    // Move 'Soccer' (case-insensitive) to the front
     const soccerIndex = arr.findIndex(
       (s) => s.sportName && s.sportName.toLowerCase() === "soccer",
     );
@@ -34,52 +51,123 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
       arr.unshift(soccer);
     }
     return arr;
-  })();
+  }, [top_bets]);
 
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const selected =
-    orderedTopBets && orderedTopBets.length > 0
-      ? orderedTopBets[selectedIdx]
-      : null;
+  const [tournamentGames, setTournamentGames] = useState<
+    TournamentGamesEntry[]
+  >([]);
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
+  const isFetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
+  const fixturesListRef = useRef<FlatList<FlatFixtureItem>>(null);
 
-  // Only call the query if selected exists
-  const {
-    data: fixtures_data,
-    isLoading,
-    isFetching,
-  } = useFixturesQuery(
-    selected
-      ? {
-          tournament_id: String(selected.tournamentID),
-          sport_id: String(selected.sportID ?? 1),
-          period: "all",
-          market_id: "1",
-          specifier: "",
-        }
-      : {
-          tournament_id: "17",
-          sport_id: "1",
-          period: "all",
-          market_id: "1",
-          specifier: "",
-        },
+  // Fetch ALL tournaments upfront in parallel (concurrency-limited),
+  // so tab switching only needs to scroll — no re-fetching.
+  useEffect(() => {
+    if (
+      !orderedTopBets?.length ||
+      isFetchingRef.current ||
+      hasFetchedRef.current
+    )
+      return;
+
+    isFetchingRef.current = true;
+    setIsFetchingAll(true);
+
+    const fetchAll = async () => {
+      const results: TournamentGamesEntry[] = [];
+      const chunks: (typeof orderedTopBets)[] = [];
+
+      for (let i = 0; i < orderedTopBets.length; i += CONCURRENCY_LIMIT) {
+        chunks.push(orderedTopBets.slice(i, i + CONCURRENCY_LIMIT));
+      }
+
+      for (const chunk of chunks) {
+        await Promise.all(
+          chunk.map(async (tournament) => {
+            try {
+              const data = await fetchFixtures({
+                tournament_id: String(tournament.tournamentID),
+                sport_id: String(tournament.sportID ?? 1),
+                period: "all",
+                market_id: "1",
+                specifier: "",
+              }).unwrap();
+
+              if (data?.fixtures?.length && data?.markets?.length) {
+                results.push({
+                  tournamentID: tournament.tournamentID,
+                  fixtures: data.fixtures.slice(0, 5),
+                  markets: data.markets,
+                });
+              }
+            } catch {
+              // skip failed tournament silently
+            }
+          }),
+        );
+      }
+
+      // Preserve orderedTopBets order (soccer first)
+      const ordered = orderedTopBets
+        .map((t) => results.find((r) => r.tournamentID === t.tournamentID))
+        .filter((r): r is TournamentGamesEntry => r !== undefined);
+
+      setTournamentGames(ordered);
+      setIsFetchingAll(false);
+      isFetchingRef.current = false;
+      hasFetchedRef.current = true;
+    };
+
+    fetchAll();
+  }, [orderedTopBets.length]); // only re-run if the set of tournaments changes
+
+  // Flatten all tournament fixtures into one array and track each
+  // tournament's starting index so we can scrollToIndex instantly.
+  const { flatData, tournamentStartIndices } = useMemo(() => {
+    const flat: FlatFixtureItem[] = [];
+    const indices: Record<number, number> = {};
+    for (const tg of tournamentGames) {
+      indices[tg.tournamentID] = flat.length;
+      for (const fixture of tg.fixtures) {
+        flat.push({ fixture, tournamentID: tg.tournamentID });
+      }
+    }
+    return { flatData: flat, tournamentStartIndices: indices };
+  }, [tournamentGames]);
+
+  const handleTabPress = useCallback(
+    (index: number) => {
+      setSelectedIdx(index);
+      const tournament = orderedTopBets[index];
+      if (!tournament) return;
+      const startIdx = tournamentStartIndices[tournament.tournamentID];
+      if (
+        startIdx !== undefined &&
+        fixturesListRef.current &&
+        flatData.length > 0
+      ) {
+        fixturesListRef.current.scrollToIndex({
+          index: startIdx,
+          animated: true,
+        });
+      }
+    },
+    [orderedTopBets, tournamentStartIndices, flatData.length],
   );
 
   const getImageURL = (name: string) => {
-    if (name == "Championship") {
-      return localImages.efl_championship_logo;
-    } else if (name == "Bundesliga") {
-      return localImages.bundesliga_logo;
-    } else {
-      return { uri: getFirebaseImage(name).tournament };
-    }
+    if (name === "Championship") return localImages.efl_championship_logo;
+    if (name === "Bundesliga") return localImages.bundesliga_logo;
+    return { uri: getFirebaseImage(name).tournament };
   };
 
   const pulseAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     let loop: any;
-    if (isLoading || isFetching) {
+    if (isFetchingAll) {
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -101,28 +189,29 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
     return () => {
       if (loop) loop.stop();
     };
-  }, [isLoading, isFetching, pulseAnim]);
+  }, [isFetchingAll, pulseAnim]);
 
   return (
     <View
       style={{
         display: "flex",
         gap: 6,
-        // backgroundColor: "#ffffff",
         paddingVertical: 10,
       }}
     >
+      {/* Tournament tab selector */}
       <View style={{ display: "flex", flexDirection: "row", width: "100%" }}>
         <FlatList
           data={orderedTopBets}
           keyExtractor={(_, idx) => idx.toString()}
           horizontal
+          showsHorizontalScrollIndicator={false}
           renderItem={({ item, index }) => {
             const isSelected = index === selectedIdx;
             return (
               <View style={{ position: "relative", alignItems: "center" }}>
                 <TouchableOpacity
-                  onPress={() => setSelectedIdx(index)}
+                  onPress={() => handleTabPress(index)}
                   style={{
                     padding: 4,
                     paddingInline: 6,
@@ -149,10 +238,9 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
                   {isSelected ? (
                     <Text
                       style={{
-                        color: isSelected ? "#fff" : "#ccc",
+                        color: "#fff",
                         fontSize: 10,
                         marginInline: 4,
-                        // fontWeight: isSelected ? "bold" : "normal",
                         fontFamily: "PoppinsSemibold",
                       }}
                     >
@@ -182,9 +270,10 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
               </View>
             );
           }}
-          // contentContainerStyle={{ paddingBottom: 30 }}
         />
       </View>
+
+      {/* Fixture cards — single flat list across all tournaments */}
       <View
         style={{
           display: "flex",
@@ -192,7 +281,7 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
           width: "100%",
         }}
       >
-        {isLoading || isFetching ? (
+        {isFetchingAll ? (
           <FlatList
             data={[1, 2, 3]}
             horizontal
@@ -317,15 +406,24 @@ const FixturesSection: React.FC<{ is_loading?: boolean }> = ({
               </Animated.View>
             )}
           />
-        ) : fixtures_data?.fixtures && fixtures_data.fixtures.length > 0 ? (
+        ) : flatData.length > 0 ? (
           <FlatList
-            data={fixtures_data?.fixtures}
+            ref={fixturesListRef}
+            data={flatData}
             horizontal
-            keyExtractor={(_, idx) => idx.toString()}
+            keyExtractor={(item, idx) => `${item.tournamentID}-${idx}`}
+            showsHorizontalScrollIndicator={false}
+            onScrollToIndexFailed={(info) => {
+              // Fallback: scroll as far as possible if index is out of range
+              fixturesListRef.current?.scrollToIndex({
+                index: Math.min(info.index, flatData.length - 1),
+                animated: true,
+              });
+            }}
             renderItem={({ item }) => (
               <FixtureCard
-                outcomes={item.outcomes}
-                fixture={item as unknown as Fixture}
+                outcomes={item.fixture.outcomes}
+                fixture={item.fixture as unknown as Fixture}
               />
             )}
           />

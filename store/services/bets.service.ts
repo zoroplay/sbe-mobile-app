@@ -150,7 +150,7 @@ const BetsApiSlice = apiSlice.injectEndpoints({
     }),
     fixturesHighlights: builder.query<
       FixturesResponse,
-      { sport_id: string; today?: string }
+      { sport_id: string; today?: string; period?: string }
     >({
       query: (data) => ({
         url: AppHelper.buildQueryUrl(BETTING_ACTIONS.SPORTS_HIGHLIGHT, {
@@ -159,36 +159,9 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         method: REQUEST_ACTIONS.GET,
         params: {
           today: data.today!,
+          period: data.period!,
         },
       }),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        try {
-          const { data } = await queryFulfilled;
-          const fixtures = Array.isArray(data.fixtures)
-            ? data.fixtures.map((tem) => ({
-                ...tem,
-                event_type: "pre",
-                status: (tem as any).status ?? 0,
-                outcomes: tem.outcomes.map((outcome) => ({
-                  ...outcome,
-                  marketName:
-                    data.markets.find(
-                      (market) =>
-                        Number(market.marketID) === Number(outcome.marketID),
-                    )?.marketName || "",
-                })),
-              }))
-            : [];
-          dispatch(
-            setFixtures({
-              ...data,
-              fixtures: fixtures as unknown as PreMatchFixture[],
-            }),
-          );
-        } catch (error) {
-          return;
-        }
-      },
     }),
     fetchFixtures: builder.query<FixturesResponse, FixturesDto>({
       query: (data) => ({
@@ -203,26 +176,6 @@ const BetsApiSlice = apiSlice.injectEndpoints({
           specifier: data.specifier,
         },
       }),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        try {
-          const { data } = await queryFulfilled;
-          const fixtures = Array.isArray(data.fixtures)
-            ? data.fixtures.map((tem) => ({
-                ...tem,
-                event_type: "pre",
-                status: (tem as any).status ?? 0,
-              }))
-            : [];
-          dispatch(
-            setFixtures({
-              ...data,
-              fixtures: fixtures as unknown as PreMatchFixture[],
-            }),
-          );
-        } catch (error) {
-          return;
-        }
-      },
     }),
 
     fetchFixture: builder.mutation<FetchFixtureResponse, FixturesDto>({
@@ -287,7 +240,7 @@ const BetsApiSlice = apiSlice.injectEndpoints({
     }),
     placeBet: builder.mutation<{ success: boolean; data: any }, PlaceBetDto>({
       query: ({ clientId, ...data }) => ({
-        url: BETTING_ACTIONS.PLACE_BET.replace(":client_id", String(clientId)),
+        url: AppHelper.buildQueryUrl(BETTING_ACTIONS.PLACE_BET, {}),
         method: REQUEST_ACTIONS.POST,
         body: data,
       }),

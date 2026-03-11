@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 export enum ENVIRONMENT_VARIABLES {
   ACCESS_TOKEN = "ACCESS_TOKEN",
@@ -10,6 +11,8 @@ export enum ENVIRONMENT_VARIABLES {
   MQTT_USERNAME = "MQTT_USERNAME",
   MQTT_PASSWORD = "MQTT_PASSWORD",
   MQTT_CLIENTID = "MQTT_CLIENTID",
+  XPRESS_LAUNCH_URL = "XPRESS_LAUNCH_URL",
+  XPRESS_PRIVATE_KEY = "XPRESS_PRIVATE_KEY",
 }
 
 export const getEnvironmentVariable = (variable: ENVIRONMENT_VARIABLES) => {
@@ -18,8 +21,8 @@ export const getEnvironmentVariable = (variable: ENVIRONMENT_VARIABLES) => {
 
 const getBaseUrl = (): string => {
   // return getEnvironmentVariable(ENVIRONMENT_VARIABLES.API_BASE_URL);
-  return "https://api.prod.sportsbookengine.com/api/v2";
-  // return "https://sports.api.sportsbookengine.com/api/v2";
+  // return "https://api.prod.sportsbookengine.com/api/v2";
+  return "https://sports.api.sportsbookengine.com/api/v2";
 };
 
 export const environmentConfig = {
@@ -31,6 +34,16 @@ export const environmentConfig = {
   MQTT_URI: getEnvironmentVariable(ENVIRONMENT_VARIABLES.MQTT_URI),
   MQTT_USERNAME: getEnvironmentVariable(ENVIRONMENT_VARIABLES.MQTT_USERNAME),
   MQTT_PASSWORD: getEnvironmentVariable(ENVIRONMENT_VARIABLES.MQTT_PASSWORD),
+  XPRESS_LAUNCH_URL: getEnvironmentVariable(
+    ENVIRONMENT_VARIABLES.XPRESS_LAUNCH_URL,
+  ),
+  XPRESS_PRIVATE_KEY:
+    (getEnvironmentVariable(
+      ENVIRONMENT_VARIABLES.XPRESS_PRIVATE_KEY,
+    ) as string) ?? "",
+
+  XPRESS_BACK_URL:
+    Platform.OS === "android" ? "bet24://close" : "bet24://close",
   // ACCESS_TOKEN: getEnvironmentVariable(ENVIRONMENT_VARIABLES.ACCESS_TOKEN),
   // REFRESH_TOKEN: getEnvironmentVariable(ENVIRONMENT_VARIABLES.REFRESH_TOKEN),
   // CLIENT_ID: 4,

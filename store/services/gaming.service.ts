@@ -56,6 +56,13 @@ const BetsApiSlice = apiSlice.injectEndpoints({
         body,
       }),
     }),
+
+    getPromotions: builder.query<ApiResponse<any>, void>({
+      query: () => ({
+        url: AppHelper.buildQueryUrl(GAMING_ACTIONS.GET_PROMOTIONS, {}),
+        method: REQUEST_ACTIONS.GET,
+      }),
+    }),
   }),
 });
 
@@ -66,4 +73,5 @@ export const {
   useGameProviderListQuery,
   useLazyGameProviderListQuery,
   useGameStartQuery,
+  useGetPromotionsQuery,
 } = BetsApiSlice;

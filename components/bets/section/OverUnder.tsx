@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Platform,
-} from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import OddsButton from "@/components/buttons/OddsButton";
 import { PreMatchFixture } from "@/store/features/types/fixtures.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +23,11 @@ const OverUnder = ({
   title: customTitle,
 }: Props) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [cardWidth, setCardWidth] = useState(0);
+  const AXIS_W = 52;
+  // Derived from the card's actual measured width — always correct on any screen
+  const cellWidth =
+    cardWidth > 0 ? Math.floor((cardWidth - AXIS_W - 4) / 2) : 120;
 
   // Theme mock
   const marketCardBg = "#fff";
@@ -82,6 +81,7 @@ const OverUnder = ({
 
   return (
     <View
+      onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
       style={[
         styles.card,
         { backgroundColor: marketCardBg, borderColor: marketCardBorder },
@@ -110,124 +110,94 @@ const OverUnder = ({
         </View>
       </TouchableOpacity>
       {!isCollapsed && (
-        <ScrollView horizontal>
+        <View style={{ width: "100%" }}>
           <View
-            style={
-              {
-                // display: "flex",
-                // width: "100%",
-                // justifyContent: "center",
-                // alignItems: "center",
-              }
-            }
+            style={{
+              flexDirection: "row",
+              paddingHorizontal: 2,
+              marginBottom: 2,
+            }}
           >
-            {/* Column Headers */}
             <View
               style={[
-                styles.gridRow,
+                styles.axisCell,
+                { width: AXIS_W, backgroundColor: "transparent" },
+              ]}
+            />
+            <View
+              style={[
+                styles.gridCell,
                 {
-                  // marginBottom: 4,
-                  paddingHorizontal: 2,
+                  width: cellWidth,
+                  alignItems: "center",
+                  justifyContent: "center",
                 },
               ]}
             >
-              <View
-                style={[styles.axisCell, { backgroundColor: "transparent" }]}
-              />
-              <View style={styles.gridBlock}>
-                <View
-                  style={[
-                    styles.gridCell,
-                    {
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      paddingInline: 8,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.axisLabel, { fontSize: 10.2 }]}>
-                    Over
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.gridCell,
-                    {
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      paddingInline: 8,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.axisLabel, { fontSize: 10.2 }]}>
-                    Under
-                  </Text>
-                </View>
-              </View>
+              <Text style={[styles.axisLabel, { fontSize: 10.2 }]}>OVER</Text>
             </View>
-            <View>
-              {/* Outcome rows */}
-              {displayItems.map((spec, index) => {
-                const group = hasRealOutcomes
-                  ? pairsBySpecifier[spec] || {}
-                  : {};
-                const value = spec.match(/total=(\d+(?:\.\d+)?)/)?.[1] || spec;
-
-                return (
-                  <View key={spec} style={styles.gridRow}>
-                    <View style={styles.axisCell}>
-                      <Text style={styles.axisLabel}>{value}</Text>
-                    </View>
-                    <View style={styles.gridBlock}>
-                      <View style={styles.gridCell}>
-                        <OddsButton
-                          outcome={group?.over!}
-                          game_id={Number(fixture_data?.gameID) as number}
-                          fixture_data={fixture_data}
-                          height={48}
-                          disabled={!group?.over || !hasRealOutcomes}
-                          rounded={
-                            index === 0
-                              ? {
-                                  borderTopLeftRadius: 6,
-                                }
-                              : index === displayItems.length - 1
-                                ? {
-                                    borderBottomLeftRadius: 6,
-                                  }
-                                : {}
-                          }
-                        />
-                      </View>
-                      <View style={styles.gridCell}>
-                        <OddsButton
-                          outcome={group?.under!}
-                          game_id={Number(fixture_data?.gameID) as number}
-                          fixture_data={fixture_data}
-                          height={48}
-                          disabled={!group?.under || !hasRealOutcomes}
-                          rounded={
-                            index === 0
-                              ? {
-                                  borderTopRightRadius: 6,
-                                }
-                              : index === displayItems.length - 1
-                                ? {
-                                    borderBottomRightRadius: 6,
-                                  }
-                                : {}
-                          }
-                        />
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
+            <View
+              style={[
+                styles.gridCell,
+                {
+                  width: cellWidth,
+                  alignItems: "center",
+                  justifyContent: "center",
+                },
+              ]}
+            >
+              <Text style={[styles.axisLabel, { fontSize: 10.2 }]}>UNDER</Text>
             </View>
           </View>
-        </ScrollView>
+          <View>
+            {displayItems.map((spec, index) => {
+              const group = hasRealOutcomes ? pairsBySpecifier[spec] || {} : {};
+              const value = spec.match(/total=(\d+(?:\.\d+)?)/)?.[1] || spec;
+              return (
+                <View
+                  key={spec}
+                  style={{ flexDirection: "row", alignItems: "center" }}
+                >
+                  <View style={[styles.axisCell, { width: AXIS_W }]}>
+                    <Text style={styles.axisLabel}>{value}</Text>
+                  </View>
+                  <View style={[styles.gridCell, { width: "42%" }]}>
+                    <OddsButton
+                      outcome={group?.over!}
+                      game_id={Number(fixture_data?.gameID) as number}
+                      fixture_data={fixture_data}
+                      height={48}
+                      disabled={!group?.over || !hasRealOutcomes}
+                      rounded={
+                        index === 0
+                          ? { borderTopLeftRadius: 6 }
+                          : index === displayItems.length - 1
+                            ? { borderBottomLeftRadius: 6 }
+                            : {}
+                      }
+                    />
+                  </View>
+                  <View style={[styles.gridCell, { width: "42%" }]}>
+                    <OddsButton
+                      outcome={group?.under!}
+                      game_id={Number(fixture_data?.gameID) as number}
+                      fixture_data={fixture_data}
+                      height={48}
+                      disabled={!group?.under || !hasRealOutcomes}
+                      rounded={
+                        index === 0
+                          ? { borderTopRightRadius: 6 }
+                          : index === displayItems.length - 1
+                            ? { borderBottomRightRadius: 6 }
+                            : {}
+                      }
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
       )}
     </View>
   );
@@ -265,19 +235,10 @@ const styles = StyleSheet.create({
     color: "#222",
     marginLeft: 6,
   },
-  gridRow: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    // paddingRight: 2,
-  },
   axisCell: {
-    minWidth: 48,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 4,
-    width: "20%",
   },
   axisLabel: {
     fontSize: 12,
@@ -285,23 +246,7 @@ const styles = StyleSheet.create({
     color: "#444",
     textTransform: "uppercase",
   },
-  gridBlock: {
-    display: "flex",
-    flexDirection: "row",
-    minWidth: 120,
-    // alignItems: "center",
-    // justifyContent: "center",
-    // // padding: 2,
-    width: "100%",
-  },
   gridCell: {
-    display: "flex",
     flexDirection: "row",
-    minWidth: 70,
-    // alignItems: "center",
-    // justifyContent: "center",
-    // padding: 2,
-    // backgroundColor: "red",
-    width: Platform.OS === "ios" ? "79%" : "73%",
   },
 });

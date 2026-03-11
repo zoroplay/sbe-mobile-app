@@ -12,7 +12,7 @@ import {
   useSportsMenuQuery,
   useTopBetsQuery,
 } from "@/store/services/bets.service";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { categoryIconMap, staticNav } from "@/data/nav/data";
 import CasinoSection from "@/components/blocks/casino/CasinoSection";
@@ -21,27 +21,37 @@ import { Text } from "@/components/Themed";
 import FixturesSection from "@/components/blocks/fixtures/FixturesSection";
 import BottomTabNav from "@/components/ui/BottomTabNav";
 import { setSportsPageQuery } from "@/store/features/slice/fixtures.slice";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { setAzMenu } from "@/store/features/slice/app.slice";
 import Footer from "@/components/layouts/Footer";
+import { useModal } from "@/hooks/useModal";
 
-const top_bets = [
-  { id: "todays-football", name: "TODAY'S FOOTBALL" },
+const top_bets: { id: string; name: string; href: "/3h" | "/today" }[] = [
+  { id: "todays-football", name: "TODAY'S FOOTBALL", href: "/today" },
   {
     id: "football-in-3-hours",
     name: "FOOTBALL IN 3 HOURS",
+    href: "/3h",
   },
 ];
 
 export default function TabOneScreen() {
-  const { data: sportsData, isLoading: sportsLoading } = useSportsMenuQuery({
-    period: "all",
-    start_date: "",
-    end_date: "",
-    timeoffset: "0",
-  });
-  useTopBetsQuery();
+  const {
+    data: sportsData,
+    isLoading: sportsLoading,
+    refetch: refetchSports,
+  } = useSportsMenuQuery(
+    {
+      period: "all",
+      start_date: "",
+      end_date: "",
+      timeoffset: "0",
+    },
+    // { refetchOnMountOrArgChange: true },
+  );
+  const { refetch: refetchTopBets } = useTopBetsQuery();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.user);
   const { top_bets: _top_bets } = useAppSelector((state) => state.fixtures);
   const [selectedSport, setSelectedSport] = useState<{
     sport_id: string;
@@ -54,6 +64,7 @@ export default function TabOneScreen() {
     id: "matches",
     name: "Matches",
   });
+  const { openModal } = useModal();
   const {
     data: fixtures_data,
     isSuccess: is_success,
@@ -64,6 +75,16 @@ export default function TabOneScreen() {
       selectedSport?.sport_id ? Number(selectedSport.sport_id ?? 1) : 1,
     ),
   });
+
+  // Refetch all data whenever this screen comes into focus
+  // (navigating back, switching tabs, returning from a game etc.)
+  useFocusEffect(
+    useCallback(() => {
+      refetchSports();
+      refetchTopBets();
+      refetch();
+    }, []),
+  );
   const handleBetslipPress = () => {
     alert("Open Betslip page!");
   };
@@ -137,6 +158,7 @@ export default function TabOneScreen() {
     name: string;
     sport_id?: string;
     tournament_id?: string;
+    href?: "/3h" | "/today";
   }[] = [
     ...top_bets,
     ..._top_bets.map((item) => ({
@@ -160,6 +182,27 @@ export default function TabOneScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => {
+                  if ((item as any).webviewUrl) {
+                    router.push({
+                      pathname: "/webview",
+                      params: {
+                        url: (item as any).webviewUrl,
+                        title: item.name,
+                      },
+                    });
+                    return;
+                  }
+                  if ((item as any).onClick) {
+                    (item as any).onClick({
+                      token: user?.authCode,
+                      mode: "1",
+                      group: user?.code,
+                      user,
+                      dispatch,
+                      openModal,
+                    });
+                    return;
+                  }
                   if (item.link) {
                     router.push(item.link as any);
                   }
@@ -219,6 +262,9 @@ export default function TabOneScreen() {
                       }),
                     );
                     router.push(`/modal`);
+                  }
+                  if (item.href) {
+                    router.push(item.href);
                   }
                 }}
                 style={styles.filterBarItem}

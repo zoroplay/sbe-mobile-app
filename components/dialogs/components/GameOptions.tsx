@@ -15,6 +15,7 @@ import LiveTimeDisplay from "@/components/ui/LiveTiemDisplay";
 import Input from "@/components/inputs/Input";
 import { Text } from "@/components/Themed";
 import FirstGoalScorer from "@/components/bets/section/FirstGoalScorer";
+import { useFixtureMqtt } from "@/hooks/useFixtureMqtt";
 
 interface GameOptionsModalProps {
   onClose: () => void;
@@ -45,6 +46,45 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
 
   // State for market search
   const [marketSearch, setMarketSearch] = useState("");
+
+  // ── MQTT: live odds updates + bet_stop for this fixture ──────────────────
+  const { oddsOverrides, isStopped } = useFixtureMqtt(
+    selectedGame?.matchID ?? undefined,
+  );
+
+  // Close the modal if this fixture gets suspended
+  useEffect(() => {
+    if (isStopped) onClose();
+  }, [isStopped]);
+
+  // Merge MQTT odds overrides into selectedGame outcomes so all section
+  // components render live odds without touching Redux state
+  const mergedFixture = useMemo(() => {
+    if (!selectedGame) return selectedGame;
+    const hasOverrides = Object.keys(oddsOverrides).length > 0;
+    if (!hasOverrides) return selectedGame;
+    return {
+      ...selectedGame,
+      outcomes: selectedGame.outcomes?.map((outcome) => {
+        const override = oddsOverrides[outcome.outcomeID];
+        let newActive = outcome.active;
+        if (override) {
+          // Ensure active is always a number
+          newActive =
+            typeof override.active === "boolean"
+              ? override.active ? 1 : 0
+              : override.active;
+        } else if (typeof outcome.active === "boolean") {
+          newActive = outcome.active ? 1 : 0;
+        }
+        return {
+          ...outcome,
+          odds: override ? override.odds : outcome.odds,
+          active: newActive,
+        };
+      }),
+    };
+  }, [selectedGame, oddsOverrides]);
 
   useEffect(() => {
     if (ref) {
@@ -182,14 +222,14 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
 
   // Render market sections in the order received from the backend, with search filter
   const createDynamicMarketSections = () => {
-    if (!selectedGame || !selectedGame.outcomes) {
+    if (!mergedFixture || !mergedFixture.outcomes) {
       return [];
     }
 
     // Group outcomes by marketId, preserving order
     const marketIdOrder: number[] = [];
     const marketGroups: { [key: number]: any[] } = {};
-    selectedGame.outcomes.forEach((outcome) => {
+    mergedFixture.outcomes.forEach((outcome) => {
       const marketId = outcome.marketId;
       if (!marketGroups[marketId]) {
         marketGroups[marketId] = [];
@@ -199,7 +239,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
     });
 
     const componentProps = {
-      fixture_data: selectedGame!,
+      fixture_data: mergedFixture!,
       disabled: isFixtureLoading,
       is_loading: isFixtureLoading,
     };
@@ -252,7 +292,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
           ),
         };
       } else if (marketType === "OVER_UNDER") {
-        const isBasketball = Number(selectedGame?.sportID) === 2;
+        const isBasketball = Number(mergedFixture?.sportID) === 2;
         return {
           type: marketType,
           component: isBasketball ? (
@@ -368,14 +408,14 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
   // Create dynamic market sections - always render components, they handle their own loading states
   const dynamicMarketSections = useMemo(
     () => createDynamicMarketSections(),
-    [selectedGame, isFixtureLoading, marketSearch],
+    [mergedFixture, isFixtureLoading, marketSearch],
   );
 
   // Only show dynamicMarketSections if we have outcomes, otherwise fallback to skeletons
   const hasOutcomes =
-    selectedGame &&
-    Array.isArray(selectedGame.outcomes) &&
-    selectedGame.outcomes.length > 0;
+    mergedFixture &&
+    Array.isArray(mergedFixture.outcomes) &&
+    mergedFixture.outcomes.length > 0;
 
   // Create skeleton components for loading state
   const skeletonSections = [
@@ -384,7 +424,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       component: (
         <MainCard
           key="skeleton-1x2"
-          fixture_data={selectedGame!}
+          fixture_data={mergedFixture!}
           disabled={true}
           is_loading={true}
           market_id={MARKET_SECTION.ONE_X_TWO}
@@ -396,7 +436,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       component: (
         <MainCard
           key="skeleton-dc"
-          fixture_data={selectedGame!}
+          fixture_data={mergedFixture!}
           disabled={true}
           is_loading={true}
           market_id={MARKET_SECTION.DOUBLE_CHANCE}
@@ -408,7 +448,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       component: (
         <OverUnder
           key="skeleton-ou"
-          fixture_data={selectedGame!}
+          fixture_data={mergedFixture!}
           disabled={true}
           is_loading={true}
           market_id={MARKET_SECTION.OVER_UNDER}
@@ -420,7 +460,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       component: (
         <CombinationCard
           key="skeleton-combo"
-          fixture_data={selectedGame!}
+          fixture_data={mergedFixture!}
           disabled={true}
           is_loading={true}
           market_id={MARKET_SECTION.GOAL_NOGOAL}
@@ -432,7 +472,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       component: (
         <HandicapMarket
           key="skeleton-handicap"
-          fixture_data={selectedGame!}
+          fixture_data={mergedFixture!}
           disabled={true}
           is_loading={true}
           market_id={MARKET_SECTION.FT_HANDICAP}
@@ -455,7 +495,7 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
       dismissible={true}
       height={DEFAULT_HEIGHT}
     >
-      <View style={{ paddingInline: 8 }}>
+      <View style={{ paddingHorizontal: 8 }}>
         {/* Market search input */}
         {isFixtureLoading ? (
           <View
@@ -602,6 +642,10 @@ const GameOptionsModal: React.FC<GameOptionsModalProps> = ({ onClose }) => {
               paddingVertical: 4,
               fontSize: 13,
               backgroundColor: "#fff",
+              color: "#000000",
+            }}
+            inputStyle={{
+              color: "#000000",
             }}
             placeholderTextColor="#888"
           />

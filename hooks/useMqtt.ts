@@ -28,7 +28,7 @@ export const useMqtt = () => {
       unsubscribeFunctions.current.push(unsubscribe);
       return unsubscribe;
     },
-    [mqttService]
+    [mqttService],
   );
 
   // Cleanup on unmount
@@ -60,17 +60,17 @@ export const useMatchMqtt = (matchId: number | string) => {
 
       // Subscribe to different message types for this match
       unsubscribers.push(
-        subscribe(`feeds/live/odds_change/${matchId}`, callback)
+        subscribe(`feeds/live/odds_change/${matchId}`, callback),
       );
       unsubscribers.push(subscribe(`feeds/live/bet_stop/${matchId}`, callback));
       unsubscribers.push(
-        subscribe(`feeds/live/fixture_change/${matchId}`, callback)
+        subscribe(`feeds/live/fixture_status/${matchId}`, callback),
       );
       unsubscribers.push(
-        subscribe(`feeds/prematch/odds_change/${matchId}`, callback)
+        subscribe(`feeds/prematch/odds_change/${matchId}`, callback),
       );
       unsubscribers.push(
-        subscribe(`feeds/prematch/bet_stop/${matchId}`, callback)
+        subscribe(`feeds/prematch/bet_stop/${matchId}`, callback),
       );
 
       // Return cleanup function for these specific subscriptions
@@ -78,7 +78,7 @@ export const useMatchMqtt = (matchId: number | string) => {
         unsubscribers.forEach((unsub) => unsub());
       };
     },
-    [subscribe, matchId]
+    [subscribe, matchId],
   );
 
   return {
@@ -97,21 +97,21 @@ export const useLiveMqtt = () => {
     (callback: (data: any) => void) => {
       return subscribe("feeds/live/odds_change/+", callback);
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToLiveBetStop = useCallback(
     (callback: (data: any) => void) => {
       return subscribe("feeds/live/bet_stop/+", callback);
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToLiveFixtureChange = useCallback(
     (callback: (data: any) => void) => {
       return subscribe("feeds/live/fixture_change/+", callback);
     },
-    [subscribe]
+    [subscribe],
   );
 
   return {
@@ -132,14 +132,14 @@ export const usePrematchMqtt = () => {
     (callback: (data: any) => void) => {
       return subscribe("feeds/prematch/odds_change/+", callback);
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToPrematchBetStop = useCallback(
     (callback: (data: any) => void) => {
       return subscribe("feeds/prematch/bet_stop/+", callback);
     },
-    [subscribe]
+    [subscribe],
   );
 
   return {

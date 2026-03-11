@@ -24,6 +24,7 @@ const GamePlay = () => {
   const game_name = casino.game_name;
   const dispatch = useAppDispatch();
   const { openModal } = useModal();
+  console.log("Starting game with ID:", game_id, "GAME NAME:", game_name);
 
   const { data, isLoading } = useGameStartQuery(
     {

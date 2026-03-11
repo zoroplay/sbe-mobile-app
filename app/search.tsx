@@ -14,26 +14,49 @@ export default function ModalScreen() {
   const dispatch = useAppDispatch();
 
   return (
-    <View>
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        backgroundColor: "rgb(6,0,25)",
+      }}
+    >
       {/* <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} /> */}
-
-      <ScrollView>
+      {!search_query ? (
         <View
           style={{
             flex: 1,
-            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
             backgroundColor: "rgb(6,0,25)",
-            paddingBottom: 24,
-            height: "100%",
           }}
         >
-          <FixturesBlock
-            markets={markets}
-            fixtures={fixtures}
-            isLoading={isLoading}
-          />
+          <Text style={{ color: "#fff", fontSize: 16 }}>
+            Search for teams, players, or events to find specific fixtures.
+          </Text>
         </View>
-      </ScrollView>
+      ) : (
+        <ScrollView>
+          <View
+            style={{
+              flex: 1,
+              width: "100%",
+              backgroundColor: "rgb(6,0,25)",
+              paddingBottom: 24,
+              height: "100%",
+            }}
+          >
+            <FixturesBlock
+              markets={markets}
+              fixtures={fixtures}
+              isLoading={isLoading}
+            />
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }

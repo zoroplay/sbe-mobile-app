@@ -51,8 +51,13 @@ export const useRegister = () => {
         return;
       }
 
+      // Remove leading zeros from username (phone number)
+      let username = formData.username.startsWith("+")
+        ? formData.username.slice(4).replace(/^0+/, "")
+        : formData.username.replace(/^0+/, "");
+
       await register({
-        username: formData.username,
+        username,
         password: formData.password,
         clientId: environmentConfig.CLIENT_ID,
         promoCode: formData.promoCode,
@@ -92,9 +97,12 @@ export const useRegister = () => {
         type: TOAST_TYPE_ENUM.ERROR,
         title: "Registration Failed",
         description:
-          error?.data?.error ||
-          error?.data?.message ||
-          error?.message ||
+          (error && "data" in error && (error as any).data?.error) ||
+          (error && "data" in error && (error as any).data?.message) ||
+          (typeof error === "object" &&
+            error &&
+            "message" in error &&
+            (error as any).message) ||
           "Invalid username or password",
       });
     }

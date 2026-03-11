@@ -5,6 +5,7 @@ import {
   getBetsForGame,
   isBetSelected,
   removeBet,
+  removeAllBetsForMatch,
   setError,
   setLoading,
   toggleActiveSelection,
@@ -67,6 +68,10 @@ export const useBetting = () => {
     dispatch(clearBets());
   };
 
+  const handleRemoveAllBetsForMatch = (match_id: number) => {
+    dispatch(removeAllBetsForMatch({ match_id }));
+  };
+
   const handleSetLoading = (loading: boolean) => {
     dispatch(setLoading(loading));
   };
@@ -87,7 +92,7 @@ export const useBetting = () => {
         match_id: payload.event_id,
         outcome_id: payload.outcome_id,
         new_odds: payload.new_odds,
-      })
+      }),
     );
   };
   const toggleActive = (payload: {
@@ -98,14 +103,14 @@ export const useBetting = () => {
       toggleActiveSelection({
         event_id: payload.event_id,
         display_name: payload.display_name,
-      })
+      }),
     );
   };
   const handleBetTypeChange = (newBetType: BET_TYPES_ENUM) => {
     dispatch(
       updateBetType({
         bet_type: newBetType,
-      })
+      }),
     );
   };
   // Helper function to check if a specific bet is selected
@@ -159,11 +164,11 @@ export const useBetting = () => {
         removeBet({
           event_id: Number(payload.fixture_data.gameID),
           display_name: payload.outcome_data.displayName,
-        })
+        }),
       );
     } else {
       dispatch(
-        addBet({ ...payload, bet_type: payload.fixture_data.event_type })
+        addBet({ ...payload, bet_type: payload.fixture_data.event_type }),
       ); // The addBet action now handles toggling
     }
   };
@@ -189,6 +194,7 @@ export const useBetting = () => {
     updateComboStake: handleUpdateComboStake,
     toggleComboChecked: handleToggleComboChecked,
     clearBets: handleClearBets,
+    removeAllBetsForMatch: handleRemoveAllBetsForMatch,
     setLoading: handleSetLoading,
     setError: handleSetError,
     updateBetOdds: handleUpdateBetOdds,

@@ -126,6 +126,7 @@ const baseQuery = fetchBaseQuery({
       if (token && !["login", "forgotten"].includes(endpoint || "")) {
         headers.set("Authorization", `Bearer ${token}`);
       }
+      headers.set("Authorization", `Bearer ---- ${token}`);
 
       try {
         const [apiKey, signature] = await Promise.all([
@@ -140,6 +141,16 @@ const baseQuery = fetchBaseQuery({
     } catch (error) {
       console.error("Error preparing headers:", error);
     }
+    console.log("Prepared headers for endpoint:", endpoint, {
+      "SBE-Client-ID": headers.get("SBE-Client-ID"),
+      Authorization: headers.get("Authorization"),
+      "SBE-API-KEY": headers.get("SBE-API-KEY"),
+      "SBE-API-SIGNATURE": headers.get("SBE-API-SIGNATURE"),
+    });
+    console.log(
+      "Final headers object:",
+      JSON.stringify(Object.fromEntries(headers.entries())),
+    );
     return headers;
   },
 });
@@ -184,14 +195,10 @@ const baseQueryWithReauthAndRateLimiting = async (
     return result;
   }
 
-  if (
-    result.error &&
-    (result.error.status === 401 ||
-      result.error.status === 502 ||
-      result.error.status === 503)
-  ) {
-    await logout(api.dispatch);
-  }
+  // if (result.error && result.error.status === 401) {
+  console.log("RESULKT ERROR, resu", result);
+  //   await logout(api.dispatch);
+  // }
 
   return result;
 };
@@ -199,22 +206,8 @@ const baseQueryWithReauthAndRateLimiting = async (
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauthAndRateLimiting,
-  endpoints: (builder) => ({
-    getUser: builder.query({
-      query: (userId) => ({
-        url: `/users/${userId}`,
-        extraOptions: { skipRefresh: true },
-      }),
-    }),
-    refreshToken: builder.mutation({
-      query: () => ({
-        url: "/auth/refresh",
-        method: "POST",
-        isRefreshRequest: true,
-      }),
-    }),
-  }),
+  endpoints: (builder) => ({}),
   tagTypes: ["Chats", "Messages", "User", "Notifications"],
-  keepUnusedDataFor: 50000,
+  keepUnusedDataFor: 50,
   refetchOnReconnect: true,
 });

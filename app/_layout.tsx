@@ -193,6 +193,24 @@ function RootLayoutNav() {
               }}
             />
             <Stack.Screen
+              name="today"
+              options={{
+                title: "Today",
+              }}
+            />
+            <Stack.Screen
+              name="promotions"
+              options={{
+                title: "Promotions",
+              }}
+            />
+            <Stack.Screen
+              name="3h"
+              options={{
+                title: "Period: 3 hours",
+              }}
+            />
+            <Stack.Screen
               name="deposit"
               options={{
                 title: "Deposit",

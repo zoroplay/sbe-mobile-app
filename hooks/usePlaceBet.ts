@@ -29,6 +29,7 @@ interface UsePlaceBetOptions {
 export const usePlaceBet = (options?: UsePlaceBetOptions) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
+  const [isBookConfirming, setIsBookConfirming] = useState(false);
 
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.user);
@@ -50,7 +51,7 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
 
   const validateBet = () => {
     // Check if user has any balance first
-    if (!user?.availableBalance || user.availableBalance <= 0) {
+    if (user?.id && (!user?.availableBalance || user.availableBalance <= 0)) {
       // openModal({
       //   modal_name: MODAL_COMPONENTS.INSUFFICIENT_BALANCE,
       //   title: "Insufficient Balance",
@@ -62,6 +63,12 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
       //     current_balance: String(user?.availableBalance || 0),
       //   },
       // });
+      showToast({
+        type: TOAST_TYPE_ENUM.ERROR,
+        title: "Insufficient Balance",
+        description:
+          "You don't have enough funds to place this bet. Please deposit funds into your account.",
+      });
       return false;
     }
 
@@ -154,7 +161,7 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
     }
 
     // Check if user has sufficient balance
-    if (stake > (user?.availableBalance ?? 0)) {
+    if (user && user.id && stake > (user?.availableBalance ?? 0)) {
       // openModal({
       //   modal_name: MODAL_COMPONENTS.INSUFFICIENT_BALANCE,
       //   title: "Insufficient Balance",
@@ -175,15 +182,258 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
     if (!validateBet()) {
       return;
     }
+    if (!isBookConfirming) {
+      setIsBookConfirming(true);
+      return;
+    }
 
     try {
       setIsPlacingBet(true);
       const placeBetPayload = buildPlaceBetPayload();
 
+      // const result = await bookBetMutation({
+      //   acceptChanges: true,
+      //   betslip_type: "Multiple",
+      //   bet_type: "Multiple",
+      //   selections: [
+      //     {
+      //       matchId: 69348330,
+      //       eventId: 69348330,
+      //       event_id: 69348330,
+      //       eventName: "Bodoe/Glimt vs. Sporting CP",
+      //       marketId: 1,
+      //       marketName: "1x2",
+      //       specifier: "",
+      //       outcomeName: "Bodoe/Glimt",
+      //       displayName: "1",
+      //       outcomeId: "1",
+      //       odds: "1.04",
+      //       eventDate: "2026-03-11T20:00:00Z",
+      //       tournament: "UEFA Champions League",
+      //       category: "International Clubs",
+      //       sport: "Soccer",
+      //       sportId: 1,
+      //       type: "live",
+      //       fixed: false,
+      //       combinability: 0,
+      //       selectionId: "69348330_1_1_1x2_Bodoe/Glimt",
+      //       element_id: "69348330_1_1_1x2_Bodoe/Glimt",
+      //       homeTeam: "Bodoe/Glimt",
+      //       awayTeam: "Sporting CP",
+      //       producerId: 1,
+      //       stake: 0,
+      //       suspended: false,
+      //       unavailable: false,
+      //       changed: false,
+      //       inPlayTime: "68:41",
+      //       score: "undefined:undefined",
+      //     },
+      //     {
+      //       matchId: 66456702,
+      //       eventId: 3539,
+      //       event_id: 3539,
+      //       eventName: "Marilia AC SP vs. Uniao Suzano AC SP",
+      //       marketId: 1,
+      //       marketName: "1X2",
+      //       specifier: "",
+      //       outcomeName: "Marilia AC SP",
+      //       displayName: "1",
+      //       outcomeId: "1",
+      //       odds: "1.22",
+      //       eventDate: "2026-3-11 23:00:00",
+      //       tournament: "Paulista, Serie A3",
+      //       category: "Brazil",
+      //       sport: "Soccer",
+      //       sportId: "1",
+      //       type: "prematch",
+      //       fixed: false,
+      //       combinability: 0,
+      //       selectionId: "66456702_1_1_1X2_Marilia_AC_SP",
+      //       element_id: "66456702_1_1_1X2_Marilia_AC_SP",
+      //       homeTeam: "Marilia AC SP",
+      //       awayTeam: "Uniao Suzano AC SP",
+      //       producerId: 3,
+      //       stake: 0,
+      //       suspended: false,
+      //       unavailable: false,
+      //       changed: false,
+      //     },
+      //     {
+      //       matchId: 68129022,
+      //       eventId: 4810,
+      //       event_id: 4810,
+      //       eventName: "Union Magdalena vs. Real Cundinamarca",
+      //       marketId: 1,
+      //       marketName: "1X2",
+      //       specifier: "",
+      //       outcomeName: "Union Magdalena",
+      //       displayName: "1",
+      //       outcomeId: "1",
+      //       odds: "1.52",
+      //       eventDate: "2026-3-11 23:00:00",
+      //       tournament: "Torneo DIMAYOR",
+      //       category: "Colombia",
+      //       sport: "Soccer",
+      //       sportId: "1",
+      //       type: "prematch",
+      //       fixed: false,
+      //       combinability: 0,
+      //       selectionId: "68129022_1_1_1X2_Union_Magdalena",
+      //       element_id: "68129022_1_1_1X2_Union_Magdalena",
+      //       homeTeam: "Union Magdalena",
+      //       awayTeam: "Real Soacha Cundinamarca",
+      //       producerId: 3,
+      //       stake: 0,
+      //       suspended: false,
+      //       unavailable: false,
+      //       changed: false,
+      //     },
+      //   ],
+      //   totalOdds: "1.93",
+      //   maxBonus: 0,
+      //   minBonus: 0,
+      //   grossWin: 193,
+      //   maxWin: "193.00",
+      //   minWin: 0,
+      //   stake: 100,
+      //   totalStake: 100,
+      //   minOdds: 1,
+      //   maxOdds: 1,
+      //   wthTax: 0,
+      //   exciseDuty: 0,
+      //   bonusId: null,
+      //   useBonus: false,
+      //   useCashback: false,
+      //   source: "mobile",
+      //   grouped: [
+      //     {
+      //       eventName: "Bodoe/Glimt vs. Sporting CP",
+      //       eventId: 69348330,
+      //       type: "live",
+      //       started: "2026-03-11T20:00:00Z",
+      //       score: "undefined:undefined",
+      //       selections: [
+      //         {
+      //           matchId: 69348330,
+      //           eventId: 69348330,
+      //           event_id: 69348330,
+      //           eventName: "Bodoe/Glimt vs. Sporting CP",
+      //           marketId: 1,
+      //           marketName: "1x2",
+      //           specifier: "",
+      //           outcomeName: "Bodoe/Glimt",
+      //           displayName: "1",
+      //           outcomeId: "1",
+      //           odds: "1.04",
+      //           eventDate: "2026-03-11T20:00:00Z",
+      //           tournament: "UEFA Champions League",
+      //           category: "International Clubs",
+      //           sport: "Soccer",
+      //           sportId: 1,
+      //           type: "live",
+      //           fixed: false,
+      //           combinability: 0,
+      //           selectionId: "69348330_1_1_1x2_Bodoe/Glimt",
+      //           element_id: "69348330_1_1_1x2_Bodoe/Glimt",
+      //           homeTeam: "Bodoe/Glimt",
+      //           awayTeam: "Sporting CP",
+      //           producerId: 1,
+      //           stake: 0,
+      //           suspended: false,
+      //           unavailable: false,
+      //           changed: false,
+      //           inPlayTime: "68:41",
+      //           score: "undefined:undefined",
+      //         },
+      //       ],
+      //     },
+      //     {
+      //       eventName: "Marilia AC SP vs. Uniao Suzano AC SP",
+      //       eventId: 3539,
+      //       type: "prematch",
+      //       started: "2026-3-11 23:00:00",
+      //       selections: [
+      //         {
+      //           matchId: 66456702,
+      //           eventId: 3539,
+      //           event_id: 3539,
+      //           eventName: "Marilia AC SP vs. Uniao Suzano AC SP",
+      //           marketId: 1,
+      //           marketName: "1X2",
+      //           specifier: "",
+      //           outcomeName: "Marilia AC SP",
+      //           displayName: "1",
+      //           outcomeId: "1",
+      //           odds: "1.22",
+      //           eventDate: "2026-3-11 23:00:00",
+      //           tournament: "Paulista, Serie A3",
+      //           category: "Brazil",
+      //           sport: "Soccer",
+      //           sportId: "1",
+      //           type: "prematch",
+      //           fixed: false,
+      //           combinability: 0,
+      //           selectionId: "66456702_1_1_1X2_Marilia_AC_SP",
+      //           element_id: "66456702_1_1_1X2_Marilia_AC_SP",
+      //           homeTeam: "Marilia AC SP",
+      //           awayTeam: "Uniao Suzano AC SP",
+      //           producerId: 3,
+      //           stake: 0,
+      //           suspended: false,
+      //           unavailable: false,
+      //           changed: false,
+      //         },
+      //       ],
+      //     },
+      //     {
+      //       eventName: "Union Magdalena vs. Real Cundinamarca",
+      //       eventId: 4810,
+      //       type: "prematch",
+      //       started: "2026-3-11 23:00:00",
+      //       selections: [
+      //         {
+      //           matchId: 68129022,
+      //           eventId: 4810,
+      //           event_id: 4810,
+      //           eventName: "Union Magdalena vs. Real Cundinamarca",
+      //           marketId: 1,
+      //           marketName: "1X2",
+      //           specifier: "",
+      //           outcomeName: "Union Magdalena",
+      //           displayName: "1",
+      //           outcomeId: "1",
+      //           odds: "1.52",
+      //           eventDate: "2026-3-11 23:00:00",
+      //           tournament: "Torneo DIMAYOR",
+      //           category: "Colombia",
+      //           sport: "Soccer",
+      //           sportId: "1",
+      //           type: "prematch",
+      //           fixed: false,
+      //           combinability: 0,
+      //           selectionId: "68129022_1_1_1X2_Union_Magdalena",
+      //           element_id: "68129022_1_1_1X2_Union_Magdalena",
+      //           homeTeam: "Union Magdalena",
+      //           awayTeam: "Real Soacha Cundinamarca",
+      //           producerId: 3,
+      //           stake: 0,
+      //           suspended: false,
+      //           unavailable: false,
+      //           changed: false,
+      //         },
+      //       ],
+      //     },
+      //   ],
+      //   hasLive: true,
+      //   userId: 252331,
+      //   username: "8032586638",
+      //   userRole: "Player",
+      //   clientId: "9",
+      //   isBooking: 0,
+      // }).unwrap();
       const result = await bookBetMutation(placeBetPayload).unwrap();
 
       if (result?.success) {
-        // Show success modal after printing
         openModal({
           modal_name: MODAL_COMPONENTS.SUCCESS_MODAL,
           title: "Bet Booked Successfully",
@@ -207,6 +457,7 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
         clearBets();
         updateStake({ stake: 0 });
         setIsConfirming(false);
+        setIsBookConfirming(false);
 
         options?.onSuccess?.();
       } else {
@@ -229,6 +480,14 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
       setIsPlacingBet(false);
       dispatch(setUserRerender());
     }
+  };
+
+  const confirmBookBet = () => {
+    setIsBookConfirming(true);
+  };
+
+  const cancelBookBet = () => {
+    setIsBookConfirming(false);
   };
   const buildPlaceBetPayload = (): PlaceBetDto => {
     return {
@@ -469,12 +728,15 @@ export const usePlaceBet = (options?: UsePlaceBetOptions) => {
     isConfirming,
     isPlacingBet,
     is_booking: isLoading,
+    isBookConfirming,
 
     // Actions
     placeBet,
     confirmBet,
     cancelBet,
     bookBet,
+    confirmBookBet,
+    cancelBookBet,
 
     // Validation
     validateBet,

@@ -1,10 +1,10 @@
-import { useAppSelector } from "@/hooks/useAppDispatch";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, TouchableOpacity } from "react-native";
 import CountriesList from "./nav-section/CountriesList";
 import { Text } from "../Themed";
 import FixturesBlock from "../fixtures/FixturesBlock";
 import { useFixturesHighlightsQuery } from "@/store/services/bets.service";
+import { PreMatchFixture } from "@/store/features/types/fixtures.types";
 
 const tabs = [
   { id: 0, name: "Highlights" },
@@ -19,22 +19,48 @@ export default function BottomTabNav({
   sport_id: number;
   isLoading?: boolean;
 }) {
-  const {
-    top_bets,
-    fixtures,
-    markets = [],
-  } = useAppSelector((state) => state.fixtures);
   const [selectedTab, setSelectedTab] = useState(0);
 
-  // Fetch today's fixtures when Today tab is selected
-  const { isFetching: isTodayLoading } = useFixturesHighlightsQuery(
-    {
-      sport_id: String(sport_id),
-      today: selectedTab === 1 ? "1" : undefined,
-    },
-    {
-      skip: selectedTab !== 1, // Only fetch when Today tab is selected
-    },
+  // Highlights tab query
+  const { data: highlightsData, isFetching: isHighlightsFetching } =
+    useFixturesHighlightsQuery(
+      { sport_id: String(sport_id) },
+      { skip: selectedTab !== 0 },
+    );
+
+  // Today tab query — only fires when tab is active
+  const { data: todayData, isFetching: isTodayFetching } =
+    useFixturesHighlightsQuery(
+      { sport_id: String(sport_id), today: "1" },
+      { skip: selectedTab !== 1, pollingInterval: 30000 },
+    );
+
+  const highlightsFixtures = useMemo(
+    () =>
+      (highlightsData?.fixtures ?? []).map((tem) => ({
+        ...tem,
+        event_type: "pre",
+        status: (tem as any).status ?? 0,
+      })) as unknown as PreMatchFixture[],
+    [highlightsData?.fixtures],
+  );
+  const highlightsMarkets = useMemo(
+    () => highlightsData?.markets ?? [],
+    [highlightsData?.markets],
+  );
+
+  const todayFixtures = useMemo(
+    () =>
+      (todayData?.fixtures ?? []).map((tem) => ({
+        ...tem,
+        event_type: "pre",
+        status: (tem as any).status ?? 0,
+      })) as unknown as PreMatchFixture[],
+    [todayData?.fixtures],
+  );
+  const todayMarkets = useMemo(
+    () => todayData?.markets ?? [],
+    [todayData?.markets],
   );
 
   return (
@@ -68,9 +94,7 @@ export default function BottomTabNav({
               <Text
                 style={{
                   color: selectedTab === idx ? "#fff" : "#e0e0e0",
-                  // fontWeight: selectedTab === idx ? "bold" : "600",
                   fontFamily: "PoppinsSemibold",
-
                   fontSize: 13,
                 }}
               >
@@ -95,15 +119,15 @@ export default function BottomTabNav({
 
       {selectedTab === 0 ? (
         <FixturesBlock
-          markets={markets}
-          fixtures={fixtures}
-          isLoading={isLoading}
+          markets={highlightsMarkets}
+          fixtures={highlightsFixtures}
+          isLoading={isLoading || isHighlightsFetching}
         />
       ) : selectedTab === 1 ? (
         <FixturesBlock
-          markets={markets}
-          fixtures={fixtures}
-          isLoading={isLoading || isTodayLoading}
+          markets={todayMarkets}
+          fixtures={todayFixtures}
+          isLoading={isTodayFetching}
         />
       ) : selectedTab === 2 ? (
         <CountriesList sport_id={sport_id} />

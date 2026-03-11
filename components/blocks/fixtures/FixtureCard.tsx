@@ -5,12 +5,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Pressable,
 } from "react-native";
 import OddsButton from "../../buttons/OddsButton";
 import { Fixture, Outcome } from "@/data/types/betting.types";
 import { PreMatchFixture } from "@/store/features/types/fixtures.types";
 import { getFirebaseImage } from "@/assets/images";
 import { Text } from "@/components/Themed";
+import { useModal } from "@/hooks/useModal";
+import { MODAL_COMPONENTS } from "@/store/features/types";
 
 interface FixtureCardProps {
   outcomes?: Outcome[];
@@ -23,8 +26,14 @@ const FixtureCard: React.FC<FixtureCardProps> = ({
   fixture,
   isLoading = false,
 }) => {
-  // Only show outcomes where marketName is '1X2' (case-insensitive)
+  // Only show outcomes where marketID is 1 (1X2)
   const oneX2Outcomes = outcomes.filter((o) => o.marketID && o.marketID === 1);
+
+  // If not loading and there are less than 3 1X2 outcomes, do not render anything
+  if (!isLoading && oneX2Outcomes.length < 3) {
+    return null;
+  }
+  const { openModal } = useModal();
 
   if (isLoading) {
     // Skeleton card visually matching the real card
@@ -39,7 +48,7 @@ const FixtureCard: React.FC<FixtureCardProps> = ({
             marginBottom: 4,
           }}
         />
-        <View style={styles.row}>
+        <Pressable style={styles.row}>
           <View style={styles.teamCol}>
             <View
               style={[
@@ -93,7 +102,7 @@ const FixtureCard: React.FC<FixtureCardProps> = ({
               }}
             />
           </View>
-        </View>
+        </Pressable>
         <View style={[styles.oddsRow, { marginTop: 10 }]}>
           {[1, 2, 3].map((_, idx) => (
             <View key={idx} style={{ flex: 1, marginHorizontal: 2 }}>
@@ -117,7 +126,15 @@ const FixtureCard: React.FC<FixtureCardProps> = ({
       <Text style={styles.tournament}>
         {fixture ? `${fixture.categoryName} - ${fixture.tournament}` : ""}
       </Text>
-      <View style={styles.row}>
+      <Pressable
+        style={styles.row}
+        onPress={() => {
+          openModal({
+            modal_name: MODAL_COMPONENTS.GAME_OPTIONS_MODAL,
+            ref: fixture?.gameID,
+          });
+        }}
+      >
         <View style={styles.teamCol}>
           {fixture && (
             <Image
@@ -150,7 +167,7 @@ const FixtureCard: React.FC<FixtureCardProps> = ({
           )}
           <Text style={styles.team}>{fixture ? fixture.awayTeam : ""}</Text>
         </View>
-      </View>
+      </Pressable>
       <View style={styles.oddsRow}>
         {oneX2Outcomes.map((o, idx) => (
           <OddsButton

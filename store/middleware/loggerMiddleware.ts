@@ -1,6 +1,10 @@
 import { Middleware } from "@reduxjs/toolkit";
 
+const isDev = process.env.NODE_ENV === "development";
+
 export const loggerMiddleware: Middleware = (store) => (next) => (action) => {
+  if (!isDev) return next(action);
+
   // Log only API requests
   if (
     typeof action === "object" &&
@@ -41,10 +45,18 @@ export const loggerMiddleware: Middleware = (store) => (next) => (action) => {
     (action.type.endsWith("/executeQuery/rejected") ||
       action.type.endsWith("/executeMutation/rejected"))
   ) {
-    console.log("❌ API Response Error:", {
-      type: action.type,
-      ...("error" in action ? { error: action.error } : {}),
-    });
+    // ConditionError = RTK Query served from cache (not a real error — skip it)
+    const isConditionAbort =
+      "error" in action &&
+      typeof (action as any).error === "object" &&
+      (action as any).error?.name === "ConditionError";
+
+    if (!isConditionAbort) {
+      console.log("❌ API Response Error:", {
+        type: action.type,
+        ...("error" in action ? { error: action.error } : {}),
+      });
+    }
   }
 
   return result;

@@ -18,7 +18,6 @@ import {
   updateOdds,
 } from "../features/slice/betting.slice";
 
-import { updateFixtureOutcome } from "../features/slice/fixtures.slice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { AppHelper } from "@/utils/helper";
 
@@ -40,7 +39,7 @@ let mqttClient: MqttClient | null = null;
 let isConnected = false;
 const subscriptions = new Map<string, Subscription[]>();
 const messageQueue = new Map<string, any[]>();
-let processingInterval: NodeJS.Timeout | null = null;
+let processingInterval: ReturnType<typeof setInterval> | null = null;
 
 // Configuration
 const PROCESS_INTERVAL = 16; // ~60fps
@@ -132,10 +131,19 @@ export const useMqttService = () => {
       // Get the latest message for each topic
       const latestMessage = messages[messages.length - 1];
 
+      // Inject _topic so consumers (e.g. useFixtureMqtt) can distinguish
+      // bet_stop / odds_change / fixture_status without separate callbacks
+      const enrichedMessage =
+        latestMessage &&
+        typeof latestMessage === "object" &&
+        !Array.isArray(latestMessage)
+          ? { ...latestMessage, _topic: topic }
+          : latestMessage;
+
       // Execute callbacks with the latest message
       topicSubscriptions.forEach(({ callback }) => {
         try {
-          callback(latestMessage);
+          callback(enrichedMessage);
         } catch (error) {
           console.error(`Error in callback for ${topic}:`, error);
         }
@@ -155,7 +163,7 @@ export const useMqttService = () => {
       `📨 MQTT Data received on ${topic}:`,
       message,
       "DATA",
-      JSON.stringify(message, null, 2)
+      JSON.stringify(message, null, 2),
     );
 
     // Queue the message instead of processing immediately
@@ -181,7 +189,7 @@ export const useMqttService = () => {
     return () => {
       const topicSubscriptions = subscriptions.get(topic) || [];
       const index = topicSubscriptions.findIndex(
-        (sub) => sub.callback === callback
+        (sub) => sub.callback === callback,
       );
 
       if (index !== -1) {
@@ -280,7 +288,7 @@ export const subscribeToLiveOddsChanges = (callback: (data: any) => void) => {
 };
 
 export const subscribeToPrematchOddsChanges = (
-  callback: (data: any) => void
+  callback: (data: any) => void,
 ) => {
   const { subscribe } = useMqttService();
   return subscribe("feeds/prematch/odds_change/+", callback);
@@ -288,7 +296,7 @@ export const subscribeToPrematchOddsChanges = (
 
 export const subscribeToMatchOddsChanges = (
   matchId: number,
-  callback: (data: any) => void
+  callback: (data: any) => void,
 ) => {
   const { subscribe } = useMqttService();
   return subscribe(`feeds/+/odds_change/${matchId}`, callback);
@@ -296,7 +304,7 @@ export const subscribeToMatchOddsChanges = (
 
 export const subscribeToMatchBetStops = (
   matchId: number,
-  callback: (data: any) => void
+  callback: (data: any) => void,
 ) => {
   const { subscribe } = useMqttService();
   return subscribe(`feeds/+/bet_stop/${matchId}`, callback);
@@ -304,7 +312,7 @@ export const subscribeToMatchBetStops = (
 
 export const subscribeToMatchFixtureChanges = (
   matchId: number,
-  callback: (data: any) => void
+  callback: (data: any) => void,
 ) => {
   const { subscribe } = useMqttService();
   return subscribe(`feeds/+/fixture_change/${matchId}`, callback);
@@ -337,7 +345,7 @@ export const getSubscribedTopics = (): string[] => {
  */
 export const connectMQTTFeeds = async (
   dispatch: ReturnType<typeof useAppDispatch>,
-  config: Partial<MQTTTopicConfig> = {}
+  config: Partial<MQTTTopicConfig> = {},
 ) => {
   const mqttService = useMqttService();
 
@@ -360,7 +368,7 @@ export const connectMQTTFeeds = async (
 // Handle incoming MQTT messages
 const handleMQTTMessage = (
   data: { topic: string; message: LiveBettingMessage },
-  dispatch: ReturnType<typeof useAppDispatch>
+  dispatch: ReturnType<typeof useAppDispatch>,
 ) => {
   const { topic, message } = data;
 
@@ -411,7 +419,7 @@ const handleMQTTMessage = (
       case "rollback_bet_settlement":
         console.log(
           "↩️ Processing ROLLBACK_BET_SETTLEMENT for match:",
-          matchIdStr
+          matchIdStr,
         );
         handleRollbackBetSettlementMessage(message, dispatch, matchIdStr);
         break;
@@ -442,7 +450,7 @@ const handleMQTTMessage = (
             "❓ Unknown MQTT message type:",
             messageType,
             "for match:",
-            matchIdStr
+            matchIdStr,
           );
         }
     }
@@ -453,7 +461,7 @@ const handleMQTTMessage = (
 const handleOddsChangeMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("🎯 ODDS_CHANGE Details:", {
     matchId,
@@ -509,7 +517,7 @@ const handleOddsChangeMessage = (
   if (shouldSuspendAll) {
     console.log(
       "🛑 Bet stop hierarchy triggered - suspending all markets for match:",
-      matchId
+      matchId,
     );
     dispatch(suspendAllMarketsForMatch(parseInt(matchId)));
   }
@@ -548,12 +556,12 @@ const handleOddsChangeMessage = (
           outcome_id: outcome.id,
           market_id: market.id,
           new_odds: outcome.odds,
-        })
+        }),
       );
 
       // Update in live games if it exists there
       console.log(
-        "🔄 Dispatching updateLiveFixtureOutcome to live games slice"
+        "🔄 Dispatching updateLiveFixtureOutcome to live games slice",
       );
       dispatch(
         updateLiveFixtureOutcome({
@@ -564,22 +572,10 @@ const handleOddsChangeMessage = (
             status: isOutcomeSuspended ? 1 : market.status, // 1 = Suspended if any condition fails
             active: outcome.active && !shouldSuspendAll,
           },
-        })
+        }),
       );
 
       // Update in prematch fixtures if it exists there
-      console.log("🔄 Dispatching updateFixtureOutcome to fixtures slice");
-      dispatch(
-        updateFixtureOutcome({
-          matchID: matchId,
-          outcomeID: outcome.id,
-          updates: {
-            odds: outcome.odds,
-            status: isOutcomeSuspended ? 1 : market.status, // 1 = Suspended if any condition fails
-            active: outcome.active && !shouldSuspendAll,
-          },
-        })
-      );
     });
   });
 
@@ -588,7 +584,7 @@ const handleOddsChangeMessage = (
 
 // Check bet stop hierarchy conditions
 const checkBetStopHierarchy = (
-  message: LiveBettingMessage
+  message: LiveBettingMessage,
   // matchId: string
 ): boolean => {
   // 1. The Betradar system is available (messages have been received in the last 20 seconds)
@@ -622,7 +618,9 @@ const checkBetStopHierarchy = (
 
   // 4. The outcome is active (not active="false")
   const hasInactiveOutcomes = markets.some((market) =>
-    (market.outcomes || market.outcome || []).some((outcome) => !outcome.active)
+    (market.outcomes || market.outcome || []).some(
+      (outcome) => !outcome.active,
+    ),
   );
 
   if (hasInactiveOutcomes) {
@@ -636,7 +634,7 @@ const checkBetStopHierarchy = (
 const handleBetStopMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("🛑 BET_STOP Details:", {
     matchId,
@@ -659,14 +657,14 @@ const handleBetStopMessage = (
     updateLiveFixture({
       matchID: matchId,
       matchStatus: "1", // 1 = Suspended according to Unified Feed
-    })
+    }),
   );
 };
 
 const handleFixtureChangeMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("📅 FIXTURE_CHANGE Details:", {
     matchId,
@@ -689,7 +687,7 @@ const handleFixtureChangeMessage = (
     if (AppHelper.isValidLiveTime(clockInfo.matchTime)) {
       incrementedTime = AppHelper.createLiveTimeString(
         clockInfo.matchTime,
-        true
+        true,
       );
 
       // Add stoppage time back if it was present
@@ -710,7 +708,7 @@ const handleFixtureChangeMessage = (
     });
 
     console.log(
-      `⏰ Time update for match ${matchId}: ${formattedTime} → ${incrementedTime}`
+      `⏰ Time update for match ${matchId}: ${formattedTime} → ${incrementedTime}`,
     );
 
     // Check match status for suspension/interruption
@@ -730,7 +728,7 @@ const handleFixtureChangeMessage = (
     if (isMatchSuspended) {
       console.log(
         "🛑 Match status indicates suspension, suspending all markets for match:",
-        matchId
+        matchId,
       );
       dispatch(suspendAllMarketsForMatch(parseInt(matchId)));
     }
@@ -743,7 +741,7 @@ const handleFixtureChangeMessage = (
         homeScore: String(message.sport_event_status.home_score || 0),
         awayScore: String(message.sport_event_status.away_score || 0),
         matchStatus: String(matchStatus),
-      })
+      }),
     );
   }
 };
@@ -751,7 +749,7 @@ const handleFixtureChangeMessage = (
 const handleBetCancelMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   // Bet cancel - just log for now, backend handles the logic
   console.log("Bet cancel for match:", matchId, message);
@@ -760,7 +758,7 @@ const handleBetCancelMessage = (
 const handleBetSettlementMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("💰 BET_SETTLEMENT Details:", {
     matchId,
@@ -783,7 +781,7 @@ const handleBetSettlementMessage = (
                 status: 3, // 3 = Settled
                 active: false,
               },
-            })
+            }),
           );
         });
       }
@@ -794,7 +792,7 @@ const handleBetSettlementMessage = (
 const handleRollbackBetSettlementMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("↩️ ROLLBACK_BET_SETTLEMENT Details:", {
     matchId,
@@ -817,7 +815,7 @@ const handleRollbackBetSettlementMessage = (
                 status: 0, // 0 = Active
                 active: true,
               },
-            })
+            }),
           );
         });
       }
@@ -828,7 +826,7 @@ const handleRollbackBetSettlementMessage = (
 const handleRollbackBetCancelMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("↩️ ROLLBACK_BET_CANCEL Details:", {
     matchId,
@@ -851,7 +849,7 @@ const handleRollbackBetCancelMessage = (
                 status: 0, // 0 = Active
                 active: true,
               },
-            })
+            }),
           );
         });
       }
@@ -862,7 +860,7 @@ const handleRollbackBetCancelMessage = (
 const handleSnapshotCompleteMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("📸 SNAPSHOT_COMPLETE Details:", {
     matchId,
@@ -877,7 +875,7 @@ const handleSnapshotCompleteMessage = (
 const handleProducerStatusMessage = (
   message: LiveBettingMessage,
   dispatch: ReturnType<typeof useAppDispatch>,
-  matchId: string
+  matchId: string,
 ) => {
   console.log("🏭 PRODUCER_STATUS Details:", {
     matchId,
@@ -911,7 +909,7 @@ const handleAliveMessage = (message?: LiveBettingMessage, dispatch?: unknown) =>
 const handleMTSResponse = (
   topic: string,
   message: any,
-  dispatch?: unknown // dispatch: ReturnType<typeof useAppDispatch>
+  dispatch?: unknown, // dispatch: ReturnType<typeof useAppDispatch>
 ) => {
   console.log("🎯 MTS Response Details:", {
     topic,
@@ -930,7 +928,7 @@ const handleMTSResponse = (
       "❌ Bet rejected by MTS:",
       message.bet_id,
       "Reason:",
-      message.reason
+      message.reason,
     );
     // Dispatch action to update bet status in Redux
     // dispatch(updateBetStatus({ betId: message.bet_id, status: 'rejected', reason: message.reason }));
@@ -943,7 +941,7 @@ const handleMTSResponse = (
       "❌ Bet cancellation rejected by MTS:",
       message.bet_id,
       "Reason:",
-      message.reason
+      message.reason,
     );
     // Dispatch action to update bet status in Redux
     // dispatch(updateBetStatus({ betId: message.bet_id, status: 'cancel_rejected', reason: message.reason }));
@@ -956,7 +954,7 @@ const handleMTSResponse = (
       "❌ Cashout rejected by MTS:",
       message.bet_id,
       "Reason:",
-      message.reason
+      message.reason,
     );
     // Dispatch action to update bet status in Redux
     // dispatch(updateBetStatus({ betId: message.bet_id, status: 'cashout_rejected', reason: message.reason }));
@@ -973,7 +971,7 @@ const handleMTSResponse = (
  */
 export const subscribeToMatchFeedsWithDispatch = (
   matchId: number,
-  dispatch: ReturnType<typeof useAppDispatch>
+  dispatch: ReturnType<typeof useAppDispatch>,
 ) => {
   const mqttService = useMqttService();
   const unsubscribers: (() => void)[] = [];
@@ -982,31 +980,31 @@ export const subscribeToMatchFeedsWithDispatch = (
   unsubscribers.push(
     mqttService.subscribe(`feeds/live/odds_change/${matchId}`, (data) => {
       handleOddsChangeMessage(data, dispatch, matchId.toString());
-    })
+    }),
   );
 
   unsubscribers.push(
     mqttService.subscribe(`feeds/live/bet_stop/${matchId}`, (data) => {
       handleBetStopMessage(data, dispatch, matchId.toString());
-    })
+    }),
   );
 
   unsubscribers.push(
     mqttService.subscribe(`feeds/live/fixture_change/${matchId}`, (data) => {
       handleFixtureChangeMessage(data, dispatch, matchId.toString());
-    })
+    }),
   );
 
   unsubscribers.push(
     mqttService.subscribe(`feeds/prematch/odds_change/${matchId}`, (data) => {
       handleOddsChangeMessage(data, dispatch, matchId.toString());
-    })
+    }),
   );
 
   unsubscribers.push(
     mqttService.subscribe(`feeds/prematch/bet_stop/${matchId}`, (data) => {
       handleBetStopMessage(data, dispatch, matchId.toString());
-    })
+    }),
   );
 
   // Return cleanup function
@@ -1079,7 +1077,7 @@ export const sendBetCancelToMTS = (cancelData: {
     console.log("✅ Bet cancellation data prepared for MTS:", cancelData);
   } else {
     console.error(
-      "❌ Cannot send bet cancellation to MTS - MQTT not connected"
+      "❌ Cannot send bet cancellation to MTS - MQTT not connected",
     );
   }
 };
@@ -1134,7 +1132,7 @@ export const subscribeToMTSResponses = (replyPrefix: string = "sbe") => {
     unsubscribers.push(
       mqttService.subscribe(topic, (data) => {
         handleMTSResponse(topic, data, null as any);
-      })
+      }),
     );
   });
 

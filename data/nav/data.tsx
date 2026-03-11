@@ -1,3 +1,6 @@
+import { setCasinoGame } from "@/store/features/slice/fixtures.slice";
+import { MODAL_COMPONENTS } from "@/store/features/types";
+import environmentConfig from "@/store/services/configs/environment.config";
 import {
   Entypo,
   FontAwesome,
@@ -8,6 +11,8 @@ import {
   MaterialIcons,
   SimpleLineIcons,
 } from "@expo/vector-icons";
+import { MD5 } from "crypto-js";
+import { router } from "expo-router";
 
 export const categoryIconMap = ({
   font_size = 24,
@@ -252,6 +257,48 @@ export const sportIconMap = {
 
 export type SportName = keyof typeof sportIconMap;
 
+/**
+ * Build the XpressGaming launch URL for a given game.
+ * @param token  - user auth token (empty string for guest)
+ * @param gameId - XpressGaming game ID (e.g. 10100 for Virtuals)
+ * @param mode   - "real" | "demo"
+ * @param group  - game group/category string
+ */
+export const buildXpressUrl = ({
+  token = "",
+  gameId,
+  mode = "1",
+  group = "",
+}: {
+  token?: string;
+  gameId: number;
+  mode?: string;
+  group?: string;
+}): string | null => {
+  const baseUrl = environmentConfig.XPRESS_LAUNCH_URL;
+  if (!baseUrl) {
+    console.error(
+      "[buildXpressUrl] XPRESS_LAUNCH_URL is not configured in app.config.js extra",
+    );
+    return null;
+  }
+  const backUrl = environmentConfig.XPRESS_BACK_URL;
+  const privateKey = environmentConfig.XPRESS_PRIVATE_KEY ?? "";
+  const hash = MD5(
+    `${token}${gameId}${backUrl}${mode}${group}mobile${privateKey}`,
+  ).toString();
+  return (
+    `${baseUrl}` +
+    `?token=${token}` +
+    `&game=${gameId}` +
+    `&backurl=${encodeURIComponent(backUrl)}` +
+    `&mode=${mode}` +
+    `&group=${group}` +
+    `&clientPlatform=mobile` +
+    `&h=${hash}`
+  );
+};
+
 export const staticNav = [
   {
     name: "sports",
@@ -272,25 +319,81 @@ export const staticNav = [
     name: "virtuals",
     // link: "/virtuals",
     icon: <MaterialIcons name="sports-esports" size={20} color="white" />,
+
+    onClick: ({
+      token = "",
+      mode = "1",
+      group = "",
+      openModal,
+      user,
+    }: {
+      token?: string;
+      mode?: string;
+      group?: string;
+      openModal: (options: { modal_name: string }) => void;
+      user: any;
+    }) => {
+      if (!user || !user.id) {
+        openModal({
+          modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+        });
+        return;
+      }
+      const url = buildXpressUrl({ token, gameId: 10100, mode, group });
+      if (!url) return; // XPRESS_LAUNCH_URL not configured
+      router.push({
+        pathname: "/webview",
+        params: {
+          url,
+          title: "Virtual Sports ",
+        },
+      });
+      return;
+    },
   },
   {
     name: "Aviator",
     // link: "/aviator",
     icon: <FontAwesome name="paper-plane" size={20} color="white" />,
+    onClick: ({
+      dispatch,
+      openModal,
+      user,
+    }: {
+      dispatch: (action: ReturnType<typeof setCasinoGame>) => void;
+      openModal: (options: { modal_name: string }) => void;
+      user: any;
+    }) => {
+      if (!user || !user.id) {
+        openModal({
+          modal_name: MODAL_COMPONENTS.LOGIN_MODAL,
+        });
+        return;
+      }
+      dispatch(
+        setCasinoGame({
+          game_name: "Aviator",
+          game_id: String(1838),
+        }),
+      );
+      router.push(`/game-play`);
+      return;
+    },
   },
-  {
-    name: "livescore",
-    // link: "/livescore",
-    icon: <MaterialIcons name="score" size={20} color="white" />,
-  },
+  // {
+  //   name: "livescore",
+  //   // link: "/livescore",
+  //   icon: <MaterialIcons name="score" size={20} color="white" />,
+  // },
   {
     name: "Statistics",
     // link: "/statistics",
+    webviewUrl: "https://s5.sir.sportradar.com/bematrics",
     icon: <FontAwesome name="bar-chart" size={20} color="white" />,
   },
   {
     name: "promotions",
-    // link: "/promotions",
+    link: "/promotions",
     icon: <MaterialIcons name="local-offer" size={20} color="white" />,
   },
 ];

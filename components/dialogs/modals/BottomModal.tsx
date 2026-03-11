@@ -11,6 +11,7 @@ import {
   useColorScheme,
   Keyboard,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { BlurView } from "expo-blur";
 
@@ -23,16 +24,17 @@ interface BottomModalProps {
   // dragAnywhereToClose?: boolean; // legacy, not used
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const DEFAULT_HEIGHT = SCREEN_HEIGHT * 0.5;
-
 const BottomModal: React.FC<BottomModalProps> = ({
   visible,
   onClose,
   dismissible = true,
   children,
-  height = DEFAULT_HEIGHT,
+  height = undefined,
 }) => {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
+  const DEFAULT_MODAL_HEIGHT = SCREEN_HEIGHT * 0.5;
+  const modalHeight =
+    typeof height === "number" ? height : DEFAULT_MODAL_HEIGHT;
   const [isMounted, setIsMounted] = useState(false);
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -41,7 +43,6 @@ const BottomModal: React.FC<BottomModalProps> = ({
   const startY = useRef(0);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const modalHeight = typeof height === "number" ? height : DEFAULT_HEIGHT;
   const initialPosition = SCREEN_HEIGHT - modalHeight;
   const prevModalHeight = useRef(modalHeight);
   const keyboardOffset = useRef(0);

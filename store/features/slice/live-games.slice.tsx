@@ -29,7 +29,10 @@ const LiveGamesSlice = createSlice({
   reducers: {
     setLiveFixtures: (
       state,
-      action: PayloadAction<{ live_fixtures: LiveFixture[]; markets: Market[] }>
+      action: PayloadAction<{
+        live_fixtures: LiveFixture[];
+        markets: Market[];
+      }>,
     ) => {
       state.live_fixtures = action.payload.live_fixtures;
       state.markets = action.payload.markets;
@@ -39,7 +42,7 @@ const LiveGamesSlice = createSlice({
 
     addLiveFixture: (state, action: PayloadAction<LiveFixture>) => {
       const existingIndex = state.live_fixtures.findIndex(
-        (fixture) => fixture.matchID === action.payload.matchID
+        (fixture) => fixture.matchID === action.payload.matchID,
       );
 
       if (existingIndex >= 0) {
@@ -52,11 +55,11 @@ const LiveGamesSlice = createSlice({
 
     updateLiveFixture: (
       state,
-      action: PayloadAction<Partial<Fixture> & { matchID: string }>
+      action: PayloadAction<Partial<Fixture> & { matchID: string }>,
     ) => {
       const { matchID, ...updates } = action.payload;
       const fixtureIndex = state.live_fixtures.findIndex(
-        (fixture) => fixture.matchID === matchID
+        (fixture) => fixture.matchID === matchID,
       );
 
       if (fixtureIndex >= 0) {
@@ -78,11 +81,11 @@ const LiveGamesSlice = createSlice({
           status?: number;
           active?: boolean;
         };
-      }>
+      }>,
     ) => {
       const { matchID, outcomeID, updates } = action.payload;
       const fixtureIndex = state.live_fixtures.findIndex(
-        (fixture) => fixture.matchID === matchID
+        (fixture) => fixture.matchID === matchID,
       );
 
       if (fixtureIndex >= 0) {
@@ -116,7 +119,7 @@ const LiveGamesSlice = createSlice({
 
     removeLiveFixture: (state, action: PayloadAction<string>) => {
       state.live_fixtures = state.live_fixtures.filter(
-        (fixture) => fixture.matchID !== action.payload
+        (fixture) => fixture.matchID !== action.payload,
       );
       state.last_updated = Date.now();
     },
@@ -137,8 +140,6 @@ const LiveGamesSlice = createSlice({
 
     // Increment time for all live fixtures
     incrementLiveTime: (state) => {
-      const now = Date.now();
-
       state.live_fixtures.forEach((fixture) => {
         if (fixture.eventTime) {
           const cleanTime = AppHelper.extractCleanTime(fixture.eventTime);
@@ -150,8 +151,6 @@ const LiveGamesSlice = createSlice({
           }
         }
       });
-
-      state.last_updated = now;
     },
 
     // Increment time for a specific fixture
@@ -160,13 +159,13 @@ const LiveGamesSlice = createSlice({
       action: PayloadAction<{
         matchID: string;
         incrementSeconds?: number;
-      }>
+      }>,
     ) => {
       const { matchID, incrementSeconds = 1 } = action.payload;
       const now = Date.now();
 
       const fixtureIndex = state.live_fixtures.findIndex(
-        (fixture) => fixture.matchID === matchID
+        (fixture) => fixture.matchID === matchID,
       );
 
       if (fixtureIndex >= 0) {
@@ -179,7 +178,7 @@ const LiveGamesSlice = createSlice({
           if (AppHelper.isValidLiveTime(cleanTime)) {
             const newTime = AppHelper.incrementTime(
               cleanTime,
-              incrementSeconds
+              incrementSeconds,
             );
             fixture.eventTime = AppHelper.createLiveTimeString(newTime, true);
           }
@@ -210,7 +209,7 @@ export const selectLiveFixtures = (state: RootState) =>
 
 export const selectLiveFixtureById = (state: RootState, matchID: string) =>
   state.live_games?.live_fixtures.find(
-    (fixture) => fixture.matchID === matchID
+    (fixture) => fixture.matchID === matchID,
   );
 
 export const selectLiveGamesLoading = (state: RootState) =>

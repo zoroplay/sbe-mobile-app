@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Input from "@/components/inputs/Input";
 import { useAppSelector } from "@/hooks/useAppDispatch";
 import CurrencyFormatter from "@/components/inputs/CurrencyFormatter";
-import { SelectedBet } from "@/store/features/types";
+import { MODAL_COMPONENTS, SelectedBet } from "@/store/features/types";
 import { useBetting } from "@/hooks/useBetting";
 import { Text } from "@/components/Themed";
+import { useModal } from "@/hooks/useModal";
 
 interface SlipItemProps {
   selection: SelectedBet; // Replace with your selection type
@@ -29,6 +30,7 @@ const SlipItem = ({
       onStakeChange(cleaned);
     }
   };
+  const { openModal } = useModal();
 
   const potentialWin = stake
     ? (parseFloat(stake) * Number(selection.game.odds ?? 0)).toFixed(2)
@@ -37,7 +39,15 @@ const SlipItem = ({
   return (
     <View style={styles.container}>
       {/* Main Content */}
-      <View style={styles.header}>
+      <Pressable
+        onPress={() => {
+          openModal({
+            modal_name: MODAL_COMPONENTS.GAME_OPTIONS_MODAL,
+            ref: String(selection.game_id) ?? selection?.game?.gameID ?? "",
+          });
+        }}
+        style={styles.header}
+      >
         <View style={styles.matchInfo}>
           <Text style={styles.matchName} numberOfLines={1}>
             {selection.game?.event_name}
@@ -59,7 +69,7 @@ const SlipItem = ({
         >
           <Ionicons name="close" size={20} color="#6b7280" />
         </TouchableOpacity>
-      </View>
+      </Pressable>
 
       {/* Selection Details */}
       <View style={styles.selectionRow}>

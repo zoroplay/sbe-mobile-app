@@ -41,8 +41,14 @@ export const useLogin = () => {
         return;
       }
 
+      // Remove leading zeros from username (phone number)
+      // If username starts with +, remove the + and the next 3 digits (country code), then strip leading zeros
+      let username = formData.username.startsWith("+")
+        ? formData.username.slice(4).replace(/^0+/, "")
+        : formData.username.replace(/^0+/, "");
+
       await login({
-        username: formData.username,
+        username,
         password: formData.password,
         clientId: environmentConfig.CLIENT_ID,
       }).unwrap();

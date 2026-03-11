@@ -3,8 +3,6 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Platform,
 } from "react-native";
 import OddsButton from "@/components/buttons/OddsButton";
 import { PreMatchFixture } from "@/store/features/types/fixtures.types";
@@ -27,8 +25,8 @@ const CombinationCard = ({
   is_loading,
 }: Props) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Theme mock
+  const [cardWidth, setCardWidth] = useState(0);
+  const AXIS_W = 52;
   const marketCardBg = "#fff";
   const marketCardBorder = "#e5e7eb";
 
@@ -87,6 +85,7 @@ const CombinationCard = ({
     });
     return (
       <View
+        onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
         style={[
           styles.card,
           { backgroundColor: marketCardBg, borderColor: marketCardBorder },
@@ -115,82 +114,53 @@ const CombinationCard = ({
           </View>
         </TouchableOpacity>
         {!isCollapsed && (
-          <ScrollView horizontal>
-            <View style={{ flex: 1, width: "100%" }}>
-              {/* X-axis headers */}
-              <View style={styles.gridRow}>
+          <View style={{ width: "100%" }}>
+            {/* X-axis headers */}
+            <View style={[styles.gridRow, { paddingHorizontal: 2, marginBottom: 2 }]}>
+              <View style={[styles.axisCell, { width: AXIS_W, backgroundColor: "transparent" }]} />
+              {marginOptions.map((margin) => (
                 <View
-                  style={[styles.axisCell, { backgroundColor: "transparent" }]}
-                />
-                <View style={[styles.gridBlock, { padding: 3 }]}>
-                  {marginOptions.map((margin) => (
-                    <View
-                      key={margin}
-                      style={[
-                        styles.gridCell,
-                        {
-                          width: `${100 / marginOptions.length}%`,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          paddingHorizontal: 8,
-                        },
-                      ]}
-                    >
-                      <Text style={styles.axisLabel}>{margin}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              {/* Outcome rows */}
-              {teamOptions.map((team, index) => (
-                <View key={team.key} style={styles.gridRow}>
-                  <View style={styles.axisCell}>
-                    <Text style={styles.axisLabel}>{team.label}</Text>
-                  </View>
-                  <View style={styles.gridBlock}>
-                    {marginOptions.map((margin, idx) => {
-                      const outcome = marginStructure[team.key]?.[margin];
-                      return (
-                        <View
-                          key={margin}
-                          style={{
-                            flex: 1,
-                            // width: `${100 / marginOptions.length}%`,
-                            width: 80,
-                          }}
-                        >
-                          <OddsButton
-                            outcome={outcome}
-                            game_id={Number(fixture_data?.gameID)}
-                            fixture_data={fixture_data}
-                            height={48}
-                            disabled={disabled}
-                            rounded={{
-                              borderTopLeftRadius:
-                                index === 0 && idx === 0 ? 6 : 0,
-                              borderTopRightRadius:
-                                index === 0 && idx === marginOptions.length - 1
-                                  ? 6
-                                  : 0,
-                              borderBottomLeftRadius:
-                                index === teamOptions.length - 1 && idx === 0
-                                  ? 6
-                                  : 0,
-                              borderBottomRightRadius:
-                                index === teamOptions.length - 1 &&
-                                idx === marginOptions.length - 1
-                                  ? 6
-                                  : 0,
-                            }}
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
+                  key={margin}
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingVertical: 2,
+                  }}
+                >
+                  <Text style={styles.axisLabel}>{margin}</Text>
                 </View>
               ))}
             </View>
-          </ScrollView>
+            {/* Outcome rows */}
+            {teamOptions.map((team, index) => (
+              <View key={team.key} style={styles.gridRow}>
+                <View style={[styles.axisCell, { width: AXIS_W }]}>
+                  <Text style={styles.axisLabel}>{team.label}</Text>
+                </View>
+                {marginOptions.map((margin, idx) => {
+                  const outcome = marginStructure[team.key]?.[margin];
+                  return (
+                    <View key={margin} style={{ flex: 1 }}>
+                      <OddsButton
+                        outcome={outcome}
+                        game_id={Number(fixture_data?.gameID)}
+                        fixture_data={fixture_data}
+                        height={48}
+                        disabled={disabled}
+                        rounded={{
+                          borderTopLeftRadius: index === 0 && idx === 0 ? 6 : 0,
+                          borderTopRightRadius: index === 0 && idx === marginOptions.length - 1 ? 6 : 0,
+                          borderBottomLeftRadius: index === teamOptions.length - 1 && idx === 0 ? 6 : 0,
+                          borderBottomRightRadius: index === teamOptions.length - 1 && idx === marginOptions.length - 1 ? 6 : 0,
+                        }}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
         )}
       </View>
     );
@@ -235,7 +205,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   axisCell: {
-    minWidth: 48,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 4,
@@ -244,34 +213,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: "#444",
-  },
-  gridCell: {
-    minWidth: 60,
-    alignItems: "center",
-    justifyContent: "center",
-
-    // padding: 2,
-    // width: "20%",
-    // backgroundColor: "blue",
-  },
-  emptyCell: {
-    color: "#aaa",
-    fontSize: 16,
-    textAlign: "center",
-  },
-  skeleton: {
-    textAlign: "center",
-    color: "#aaa",
-    padding: 16,
-  },
-  gridBlock: {
-    display: "flex",
-    flexDirection: "row",
-    // minWidth: 120,
-    // alignItems: "center",
-    // justifyContent: "center",
-    // // padding: 2,
-    width: Platform.OS === "ios" ? "128%" : "118%",
-    // backgroundColor: "green",
   },
 });

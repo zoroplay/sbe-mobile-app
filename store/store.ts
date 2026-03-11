@@ -26,7 +26,7 @@ import {
 import { apiSlice } from "./services/constants/api.service";
 
 const persistConfig = {
-  key: "bet24-root:v1:2.5",
+  key: "bet24-root:v1:2.7",
   storage: AsyncStorage,
   whitelist: [
     "app",

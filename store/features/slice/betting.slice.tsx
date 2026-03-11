@@ -368,8 +368,19 @@ const BettingSlice = createSlice({
         };
       }
 
+      const isCombinedBetType =
+        payload.bet_type === "combined" ||
+        state.bet_type === BET_TYPES_ENUM.COMBINED ||
+        state.coupon_data.bet_type === "Combined";
+
       // Check if this is the first selection
-      if (!state.coupon_data.selections.length) {
+      if (!state.coupon_data.selections.length || isCombinedBetType) {
+        if (isCombinedBetType && state.coupon_data.selections.length) {
+          // Only one selection is allowed for combined bets
+          state.coupon_data.selections = [];
+          state.selected_bets = [];
+          state.coupon_data.total_odds = 1;
+        }
         state.coupon_data.bet_type = "Single";
         state.coupon_data.selections.push(selection_data);
         state.coupon_data.total_odds = Number(
@@ -646,6 +657,23 @@ const BettingSlice = createSlice({
       }
     },
 
+    removeAllBetsForMatch: (
+      state: BettingState,
+      { payload }: PayloadAction<{ match_id: number }>,
+    ) => {
+      const { match_id } = payload;
+      state.coupon_data.selections = state.coupon_data.selections.filter(
+        (sel) => sel.match_id !== match_id,
+      );
+      state.selected_bets = state.selected_bets.filter(
+        (sel) => sel.match_id !== match_id,
+      );
+      if (state.coupon_data.selections.length === 0) {
+        state.total_odds = 1;
+        state.potential_winnings = 0;
+      }
+    },
+
     removeBet: (
       state: BettingState,
       { payload }: PayloadAction<RemoveBetPayload>,
@@ -891,6 +919,19 @@ const BettingSlice = createSlice({
 
       // Update the specific combo's stake
       if (state.coupon_data.combos && state.coupon_data.combos[combo_index]) {
+        // Compliance: only one combo can have a stake at a time.
+        // Reset all other combos before applying the new stake.
+        state.coupon_data.combos.forEach((c, idx) => {
+          if (idx !== combo_index) {
+            c.stake_per_combination = 0;
+            c.min_win = 0;
+            c.max_win = 0;
+            c.checked = false;
+          }
+        });
+
+        // Mark this combo as the active (checked) one
+        state.coupon_data.combos[combo_index].checked = true;
         state.coupon_data.combos[combo_index].stake_per_combination = stake;
 
         // Calculate min/max win for this combo
@@ -951,10 +992,37 @@ const BettingSlice = createSlice({
     ) => {
       const { combo_index } = action.payload;
 
-      if (state.coupon_data.combos && state.coupon_data.combos[combo_index]) {
-        // Toggle the checked state
-        state.coupon_data.combos[combo_index].checked =
-          !state.coupon_data.combos[combo_index].checked;
+      if (state.coupon_data.combos) {
+        const isCurrentlyChecked =
+          !!state.coupon_data.combos[combo_index]?.checked;
+
+        // Radio-button behaviour: only one combo active at a time.
+        // Reset all combos first, then activate the selected one (unless it was already active).
+        state.coupon_data.combos.forEach((combo, idx) => {
+          const becomesActive = !isCurrentlyChecked && idx === combo_index;
+          combo.checked = becomesActive;
+          if (!becomesActive) {
+            combo.stake_per_combination = 0;
+            combo.min_win = 0;
+            combo.max_win = 0;
+          }
+        });
+
+        // Recalculate totals after reset
+        state.coupon_data.total_stake = state.coupon_data.combos.reduce(
+          (sum, c) =>
+            sum + (c.combinations || 0) * (c.stake_per_combination || 0),
+          0,
+        );
+        state.stake = state.coupon_data.total_stake;
+        state.coupon_data.min_win = state.coupon_data.combos.reduce(
+          (sum, c) => sum + (c.min_win || 0),
+          0,
+        );
+        state.coupon_data.max_win = state.coupon_data.combos.reduce(
+          (sum, c) => sum + (c.max_win || 0),
+          0,
+        );
       }
     },
 
@@ -1316,6 +1384,7 @@ export const {
   addBet,
   setBetslip,
   removeBet,
+  removeAllBetsForMatch,
   updateStake,
   updateComboStake,
   toggleComboChecked,
