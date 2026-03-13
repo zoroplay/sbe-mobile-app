@@ -6,10 +6,10 @@ import {
 import * as SecureStore from "expo-secure-store";
 
 const ACCESS_TOKEN_KEY = getEnvironmentVariable(
-  ENVIRONMENT_VARIABLES.ACCESS_TOKEN
+  ENVIRONMENT_VARIABLES.ACCESS_TOKEN,
 );
 const REFRESH_TOKEN_KEY = getEnvironmentVariable(
-  ENVIRONMENT_VARIABLES.REFRESH_TOKEN
+  ENVIRONMENT_VARIABLES.REFRESH_TOKEN,
 );
 
 // Check if SecureStore is available (it might not be on all devices)
@@ -27,10 +27,10 @@ export const setAccessToken = async (token: string): Promise<void> => {
     const secureStoreAvailable = await isSecureStoreAvailable();
 
     if (secureStoreAvailable) {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
     } else {
       // Fall back to AsyncStorage if SecureStore is not available
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+      await AsyncStorage.setItem(ACCESS_TOKEN_KEY, token);
     }
   } catch (error) {
     console.error("Error storing refresh token:", error);
@@ -43,9 +43,9 @@ export const clearTokens = async (): Promise<void> => {
 
     const secureStoreAvailable = await isSecureStoreAvailable();
     if (secureStoreAvailable) {
-      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
     } else {
-      await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+      await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
     }
   } catch (error) {
     console.error("Error clearing tokens:", error);

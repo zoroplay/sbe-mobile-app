@@ -126,7 +126,6 @@ const baseQuery = fetchBaseQuery({
       if (token && !["login", "forgotten"].includes(endpoint || "")) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      headers.set("Authorization", `Bearer ---- ${token}`);
 
       try {
         const [apiKey, signature] = await Promise.all([
@@ -195,10 +194,10 @@ const baseQueryWithReauthAndRateLimiting = async (
     return result;
   }
 
-  // if (result.error && result.error.status === 401) {
-  console.log("RESULKT ERROR, resu", result);
-  //   await logout(api.dispatch);
-  // }
+  if (result.error && result.error.status === 401) {
+    console.log("RESULKT ERROR, resu", result);
+    await logout(api.dispatch);
+  }
 
   return result;
 };
